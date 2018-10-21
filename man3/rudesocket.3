@@ -1,0 +1,277 @@
+.\" Process this file with 
+.\" groff -man -Tascii rudeconfig.3
+.\"
+.TH rudesocket 3 "15 Jan 2008" "Version 1.1.0" "User Manuals"
+
+.SH NAME
+rudesocket \- Library (C++ API) for making Client Socket Connections  
+
+.PP
+.SH SYNOPSIS
+.br
+.PP
+.nf
+	#include <rude/socket.h>
+	
+    rude::Socket *socket = new Socket();
+    socket->connect('example.com', 80);
+    socket->sends('GET / HTTP/1.0\n\n');
+    const char *response = socket->reads();
+    cout << response;
+    socket->close();
+.fi
+.PP
+.SS "Public Member Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBSocket\fP ()"
+.br
+.RI "\fIConstructor. \fP"
+.ti -1c
+.RI "\fB~Socket\fP ()"
+.br
+.RI "\fIDestructor. \fP"
+.ti -1c
+.RI "void \fBsetTimeout\fP (int seconds, int microseconds)"
+.br
+.RI "\fISets the timeout value for Connect, Read and Send operations. \fP"
+.ti -1c
+.RI "const char * \fBgetError\fP ()"
+.br
+.RI "\fIReturns a description of the last known error. \fP"
+.ti -1c
+.RI "bool \fBconnect\fP (const char *server, int port)"
+.br
+.RI "\fIConnects to the specified server and port. \fP"
+.ti -1c
+.RI "bool \fBconnectSSL\fP (const char *server, int port)"
+.br
+.RI "\fIConnects to the specified server and port over a secure connection. \fP"
+.ti -1c
+.RI "bool \fBinsertTunnel\fP (const char *server, int port)"
+.br
+.RI "\fIInserts a transparent tunnel into the connect chain. \fP"
+.ti -1c
+.RI "bool \fBinsertSocks5\fP (const char *server, int port, const char *username, const char *password)"
+.br
+.RI "\fIInserts a Socks5 server into the connect chain. \fP"
+.ti -1c
+.RI "bool \fBinsertSocks4\fP (const char *server, int port, const char *username)"
+.br
+.RI "\fIInserts a Socks4 server into the connect chain. \fP"
+.ti -1c
+.RI "bool \fBinsertProxy\fP (const char *server, int port)"
+.br
+.RI "\fIInserts a CONNECT-Enabled HTTP proxy into the connect chain. \fP"
+.ti -1c
+.RI "int \fBsend\fP (const char *data, int length)"
+.br
+.RI "\fISends a buffer of data over the connection. \fP"
+.ti -1c
+.RI "int \fBread\fP (char *buffer, int length)"
+.br
+.RI "\fIReads a buffer of data from the connection. \fP"
+.ti -1c
+.RI "const char * \fBreads\fP ()"
+.br
+.RI "\fIReads everything available from the connection. \fP"
+.ti -1c
+.RI "const char * \fBreadline\fP ()"
+.br
+.RI "\fIReads a line from the connection. \fP"
+.ti -1c
+.RI "bool \fBsends\fP (const char *buffer)"
+.br
+.RI "\fISends a null terminated string over the connection. \fP"
+.ti -1c
+.RI "bool \fBclose\fP ()"
+.br
+.RI "\fICloses the connection. \fP"
+.ti -1c
+.RI "void \fBsetMessageStream\fP (std::ostream &o)"
+.br
+.RI "\fISets an output stream to receive real-time messages about the socket. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+The public interface to the \fBSocket\fP component. 
+
+If you are using windows, you will need to initiate the winsock DLL yourself, and finish the DLL yourself when you are done using the component.
+.SH "General Usage"
+.PP
+.PP
+.nf
+    Socket *socket = new Socket();
+    socket->connect('example.com', 80);
+    socket->sends('GET / HTTP/1.0\n\n');
+    const char *response = socket->reads();
+    cout << response;
+    socket->close();
+.fi
+.PP
+.SH "SSL Usage"
+.PP
+.PP
+.nf
+    Socket *socket = new Socket();
+    socket->connectSSL('example.com', 443);
+    socket->sends('GET / HTTP/1.0\n\n');
+    const char *response = socket->reads();
+    cout << response;
+    socket->close();
+.fi
+.PP
+.SH "Chaining Connections"
+.PP
+.PP
+.nf
+    Socket *socket = new Socket();
+    socket->insertSocks4('12.34.56.78', 8000, 'username');
+    socket->insertSocks5('12.34.56.78', 8000, 'username', 'password');
+    socket->insertProxy('12.34.56.78', 8080);
+    socket->connectSSL('example.com', 443);
+    socket->sends('GET / HTTP/1.0\n\n');
+    const char *response = socket->reads();
+    cout << response;
+    socket->close();
+.fi
+.PP
+.SH "Adding Error checking"
+.PP
+.PP
+.nf
+    Socket *socket = new Socket();
+    if(socket->connectSSL('google.com', 443))
+    {
+        if(socket->sends('GET / HTTP/1.0\n\n'))
+        {
+            const char *response = socket->reads();
+            if(response)
+            {
+                cout << response;
+            }
+            else
+            {
+                cout << socket->getError() << '\n';
+            }
+        }
+        else
+        {
+            cout << socket->getError() << '\n';
+        }
+        socket->close();
+    }
+    else
+    {
+        cout << socket->getError() << '\n';
+    }
+.fi
+.PP
+ 
+.PP
+.SH "Constructor & Destructor Documentation"
+.PP 
+.SS "rude::Socket::Socket ()"
+.PP
+Constructor. 
+.PP
+.SS "rude::Socket::~Socket ()"
+.PP
+Destructor. 
+.PP
+.SH "Member Function Documentation"
+.PP 
+.SS "bool rude::Socket::close ()"
+.PP
+Closes the connection. 
+.PP
+A connection must established before this method can be called 
+.SS "bool rude::Socket::connect (const char * server, int port)"
+.PP
+Connects to the specified server and port. 
+.PP
+If proxies have been specified, the connection passes through tem first. 
+.SS "bool rude::Socket::connectSSL (const char * server, int port)"
+.PP
+Connects to the specified server and port over a secure connection. 
+.PP
+If proxies have been specified, the connection passes through them first. 
+.SS "const char* rude::Socket::getError ()"
+.PP
+Returns a description of the last known error. 
+.PP
+.SS "bool rude::Socket::insertProxy (const char * server, int port)"
+.PP
+Inserts a CONNECT-Enabled HTTP proxy into the connect chain. 
+.PP
+Becomes the last server connected to in the chain before connecting to the destination server 
+.SS "bool rude::Socket::insertSocks4 (const char * server, int port, const char * username)"
+.PP
+Inserts a Socks4 server into the connect chain. 
+.PP
+Becomes the last server connected to in the chain before connecting to the destination server 
+.SS "bool rude::Socket::insertSocks5 (const char * server, int port, const char * username, const char * password)"
+.PP
+Inserts a Socks5 server into the connect chain. 
+.PP
+Becomes the last server connected to in the chain before connecting to the destination server 
+.SS "bool rude::Socket::insertTunnel (const char * server, int port)"
+.PP
+Inserts a transparent tunnel into the connect chain. 
+.PP
+A transparent Tunnel is a server that accepts a connection on a certain port, and always connects to a particular server:port address on the other side. Becomes the last server connected to in the chain before connecting to the destination server 
+.SS "int rude::Socket::read (char * buffer, int length)"
+.PP
+Reads a buffer of data from the connection. 
+.PP
+A connection must established before this method can be called 
+.SS "const char* rude::Socket::readline ()"
+.PP
+Reads a line from the connection. 
+.PP
+A connection must established before this method can be called 
+.SS "const char* rude::Socket::reads ()"
+.PP
+Reads everything available from the connection. 
+.PP
+A connection must established before this method can be called 
+.SS "int rude::Socket::send (const char * data, int length)"
+.PP
+Sends a buffer of data over the connection. 
+.PP
+A connection must established before this method can be called 
+.SS "bool rude::Socket::sends (const char * buffer)"
+.PP
+Sends a null terminated string over the connection. 
+.PP
+The string can contain its own newline characters. Returns false and sets the error message if it fails to send the line. A connection must established before this method can be called 
+.SS "void rude::Socket::setMessageStream (std::ostream & o)"
+.PP
+Sets an output stream to receive real-time messages about the socket. 
+.PP
+.SS "void rude::Socket::setTimeout (int seconds, int microseconds)"
+.PP
+Sets the timeout value for Connect, Read and Send operations. 
+.PP
+Setting the timeout to 0 removes the timeout - making the \fBSocket\fP blocking. 
+
+.SH SEE ALSO
+.BR rudecgiparser(3),
+.BR rudeconfig(3),
+.BR rudedatabase(3),
+.BR rudesession(3)
+
+.SH REPORTING PROBLEMS
+
+Before reporting a problem, please check the rudeserver.com web site to verify that you have the latest version of rudesocket; otherwise, obtain the latest version and see if the problem still exists.  Please read the  FAQ at:
+
+              http://www.rudeserver.com/
+
+before asking for help.  Send questions and/or comments to  matt@rudeserver.com
+
+.SH AUTHORS
+Copyright (C) 2000-2008 Matthew Flood (matt@rudeserver.com)
+
+This  software is provided "as-is," without any express or implied warranty.  In no event will the authors be held liable for any damages arising from the use of this software.  See the distribution directory with respect  to  requirements  governing  redistribution. Thanks to all the people who reported problems and suggested various improvements in rudesocket; who are too numerous to cite here.
+

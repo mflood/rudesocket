@@ -1,0 +1,53 @@
+RudeSocket NEWS - User visible changes.
+See ChangeLog for more detailed information on internal changes
+See the end for copying conditions.
+
+_____________________________________________________________
+Release 1.2.0-1 Tue Jan 29 2008
+- It is now easier to build the library on windows
+  
+_______________________________________________________________________________
+Release 1.1.0-2 - Matthew Flood 2007-05-29
+
+	- Created Man Page
+	- Minor modifications to build scripts
+ 
+_________________________________________________________________________
+Version 1.1.0-1
+
+	** RudeSocket became open source and is distributed under the GNU Public License.
+		Commercial licenses are available for a fee, and allow the holder
+		to use the library in commercial applications. Contact info@rudeserver.com
+		for more details.
+
+
+	** Fixed a bug that produced debug output while connecting to a SOCKS5 Server.
+
+	** Changed package versioning: 
+		now using the LIBRARY_VERSION-RELEASE_VERSION
+		Release version will be set to 1 for each new lib version
+		
+	** Rolled the package into binary and source RPMs
+	
+__________________________________________________________________________________
+
+
+Copyright (C) 2001, 2002, 2003, 2004, 2005 Matthew Flood
+See file AUTHORS for contact information
+
+This file is part of RudeSocket.
+
+RudeSocket is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+RudeSocket is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RudeSocket; see the file COPYING.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+Boston, MA 02111-1307, USA.

@@ -1,0 +1,85 @@
+README for RudeSocket
+See the end of file for copying conditions
+
+This file contains the following sections, please
+glance through them all before installing RudeSocket.
+
+	* Introduction
+	* Bug Reporting
+	* Windows Builds
+	* Copying
+	
+
+*** INTRODUCTION ***
+
+RudeSocket is a library provides client socket services to an application.
+In addition to normal TCP connections, it supports proxies, SOCK4 and SOCKS5 servers.
+Furthermore, it allows you to chain proxies together.
+
+Documentation, discussions, and new releases are available at 
+
+http://www.rudeserver.com/
+
+See file `COPYING' for copying conditions.
+See file `INSTALL' for compilation and installation instructions.
+See file `NEWS' for a list of major changes in the current release.
+See file `THANKS' for a list of contributors.
+See file 'AUTHORS' for contact information
+
+
+*** BUG REPORTING ***
+
+Please Send bug reports to <rudesocket@rudeserver.com>.
+A bug report should contain an adequate description of the 
+problem, your input, what you expected, what you got, 
+and why this is wrong.  Where applicable, please submit actual data
+files with your report. 
+
+Your feedback will help us to make a better and more portable package.
+Consider documentation errors as bugs, and report them as such.  If you
+develop anything pertaining to RudeSocket or have suggestions, let us know
+and share your findings by writing to <rudesocket@rudeserver.com> or
+by visiting the discussion forum accessable from the RudeServer 
+website at http://www.rudeserver.com/
+
+*** WINDOWS BUILDS ***
+
+To build on windows, you will need to define WIN32 when compiling.
+e.g. for Borland bcc32, cd to the src directory and run:
+
+ bcc32 -c -DWIN32 *.cpp
+ dir /B *.obj > objectlist.txt
+ for /F %i in (objectlist.txt) do @tlib rudesocket.lib +%i
+
+To include SSL support for windows, you must also define USING_OPENSSL
+You will need to build openssl for your platform and locate the include 
+directory that is created (/inc32)
+
+ bcc32 -c -DWIN32 -DUSING_OPENSSL -I/OpenSSLPath/inc32 *.cpp 
+ dir /B *.obj > objectlist.txt
+ for /F %i in (objectlist.txt) do @tlib rudesocket.lib +%i
+
+*** COPYING ***
+
+Copyright (C) 2001 - 2008 Matthew Flood
+See file AUTHORS for contact information
+
+This file is part of RudeSocket.
+
+RudeSocket is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+RudeSocket is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RudeSocket; see the file COPYING.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+Boston, MA 02111-1307, USA.
+
+This product includes software developed by the OpenSSL Project
+for use in the OpenSSL Toolkit. (http://www.openssl.org/) 

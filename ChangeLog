@@ -1,0 +1,55 @@
+ChangeLog for RudeSocket C++ Library
+
+Copyright (C) 2001 - 2008 Matthew Flood
+See file AUTHORS for contact information
+
+This file is part of RudeSocket.
+
+RudeSocket is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+RudeSocket is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with RudeSocket; see the file COPYING.  If not, write to
+the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+Boston, MA 02111-1307, USA.
+
+
+* Tue Jan 29 2008 Matt Flood <matt@rudeserver.com>
+- 1.2.0-1
+- Modified source code to facilitate windows builds
+- Instead of configuring build to use openssl by default, 
+  it now requires ./configure --with-openssl to include 
+  openssl functionality
+
+* Tue Jan 08 2008 Matt Flood <matt@rudeserver.com>
+- 1.1.0-3
+- Minor changes to build scripts
+
+* Tue May 29 2007 Matt Flood <matt@rudeserver.com>
+- 1.1.0-2
+- Added Man Page
+- Minor changes to build scripts
+
+* Thu Apr 10 2006 Matt Flood <matt@rudeserver.com>
+- 1.1.0-1
+- First RPM Release
+
+-------------
+--------------------------
+---------------------------------------------------
+Release 1.1  Lib Version 1.1.0
+
+	** Converted Library to Open Source
+
+	** Fixed a bug that caused debug output to appear when connecting to a Socks5 server.
+
+------------------------------------------------------------------------------------
+
+--End of Change Log--
