@@ -50,7 +50,8 @@ librudesocket_la_SOURCES = 	src/rude_socketimpl.cpp \
 	src/socket_tcpclient.h
 
 librudesocket_la_LDFLAGS = -version-info 1:2:0
-librudesocket_la_LIBADD = -lssl
+# SSL: ./configure --with-openssl adds -lssl via LIBS; do not link it
+# unconditionally here - the default (non-SSL) build must not require OpenSSL.
 
 
 pkginclude_HEADERS = src/socket.h

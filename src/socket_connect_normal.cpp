@@ -69,12 +69,14 @@ namespace sckt{
 // 
 int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, socklen_t len, int msec) 
 { 
-  int oldflags; // flags to be restored later
-  int newflags; // nonblocking sockopt for socket 
-  int ret;      // Result of syscalls 
-  int value;    // Value to be returned 
+  int ret;      // Result of syscalls
+  int value;    // Value to be returned
 
-#ifndef WIN32
+#ifdef WIN32
+  (void) msec;
+#else
+  int oldflags; // flags to be restored later
+  int newflags; // nonblocking sockopt for socket
 
   	// 1. ADJUST FLAGS
 	//
@@ -124,10 +126,8 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 		FD_ZERO(&wset); 
 		FD_SET(socket, &wset); 
  
-		tv.tv_sec = 5; 
-		// Why the hell is this times 1000?????
-		//tv.tv_usec = 1000 * (msec % 1000); 
-		tv.tv_usec = 0;// 1000 * msec % 1000;
+		tv.tv_sec = msec / 1000;
+		tv.tv_usec = 1000 * (msec % 1000);
  
 		ret = select(socket+1, NULL, &wset, NULL, &tv); 
  
@@ -211,7 +211,7 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 
    int len=strlen(server);
 	char *buf=new char[len + 50];
-	sprintf(buf, "Normal connect to %s on port %d...", server, port);
+	snprintf(buf, len + 50, "Normal connect to %s on port %d...", server, port);
 	setMessage(buf);
 	delete [] buf;
 
@@ -236,21 +236,25 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 
 
 	struct sockaddr_in peer;
-	LPHOSTENT he=gethostbyname(server);
-	if(he==NULL)
+	memset(&peer, 0, sizeof(peer));
+	peer.sin_family=AF_INET;
+	peer.sin_port=htons(port);
+
+	struct addrinfo hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family=AF_INET;
+	hints.ai_socktype=SOCK_STREAM;
+	struct addrinfo *res=(struct addrinfo*) 0;
+	if(getaddrinfo(server, (char*) 0, &hints, &res) != 0 || res == (struct addrinfo*) 0)
 	{
 		setError("Could not resolve domain");
 		return false;
 	}
-	peer.sin_family=AF_INET;
-	peer.sin_port=htons(port);
-	
-	//peer.sin_addr.s_addr=inet_addr("12.34.167.1");
-
-	peer.sin_addr=*(struct in_addr *)he->h_addr_list[0];
+	peer.sin_addr=((struct sockaddr_in *) res->ai_addr)->sin_addr;
+	freeaddrinfo(res);
 
 	int milliseconds = getTimeoutSecs() * 1000;
-	milliseconds += getTimeoutMicroSecs();
+	milliseconds += getTimeoutMicroSecs() / 1000;
 	int rc;
 	if(milliseconds)
 	{

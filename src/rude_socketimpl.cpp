@@ -70,6 +70,7 @@ namespace sckt{
 Rude_SocketImpl::Rude_SocketImpl()
 {
 	d_lastconnect = 0;
+	d_sslverify = true;
 }
 
 Rude_SocketImpl::~Rude_SocketImpl()
@@ -83,11 +84,21 @@ void Rude_SocketImpl::setTimeout(int seconds, int microseconds)
 	
 const char *Rude_SocketImpl::getError()
 {
+	if(!d_sslerror.empty())
+	{
+		return d_sslerror.c_str();
+	}
 	return d_tcpclient.getError();
+}
+
+void Rude_SocketImpl::setSSLVerify(bool verify)
+{
+	d_sslverify = verify;
 }
 
 bool Rude_SocketImpl::connect(const char *server, int port)
 {
+	d_sslerror = "";
 	Socket_Connect_Normal *normalconnect = new Socket_Connect_Normal();
 	normalconnect->setChild(d_lastconnect);
 	d_tcpclient.setConnection(normalconnect);
@@ -98,18 +109,24 @@ bool Rude_SocketImpl::connect(const char *server, int port)
 	
 bool Rude_SocketImpl::connectSSL(const char *server, int port)
 {
+	d_sslerror = "";
+#ifdef USING_OPENSSL
 	Socket_Connect_Normal *normalconnect = new Socket_Connect_Normal();
 	normalconnect->setChild(d_lastconnect);
 	d_tcpclient.setConnection(normalconnect);
-	
-#ifdef USING_OPENSSL
+
 	Socket_Comm_SSH *comm = new Socket_Comm_SSH();
-#else
-	Socket_Comm_Normal *comm = new Socket_Comm_Normal();
-#endif
+	comm->setHostname(server);
+	comm->setVerifyPeer(d_sslverify);
 
 	d_tcpclient.setComm(comm);
 	return d_tcpclient.connect(server, port);
+#else
+	(void) server;
+	(void) port;
+	d_sslerror = "RudeSocket was built without SSL support - connectSSL() is unavailable. Rebuild with OpenSSL (RUDESOCKET_WITH_SSL=ON).";
+	return false;
+#endif
 }
 
 bool Rude_SocketImpl::insertSocks4(const char *server, int port, const char *username)
@@ -223,6 +240,7 @@ bool Rude_SocketImpl::close()
 void Rude_SocketImpl::setMessageStream( std::ostream &o)
 {
 	// not implemented yet
+	(void) o;
 }
 
 

@@ -31,7 +31,7 @@
 namespace rude{
 namespace sckt{
 
-bool Socket_Connect_Tunnel::simpleConnect(SOCKET &s, const char *destip, int port)
+bool Socket_Connect_Tunnel::simpleConnect(SOCKET &, const char *, int)
 {
 	// tunnels are completely transparent, and have to do
 	// no work at all...

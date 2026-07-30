@@ -9,12 +9,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2, or (at your option)
 // any later version.
-// 
+//
 // RudeSocket is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with RudeSocket; (see COPYING) if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -25,42 +25,70 @@
 
 #ifndef INCLUDED_SOCKET_COMM_SSH_H
 #define INCLUDED_SOCKET_COMM_SSH_H
-
+
 #ifndef INCLUDED_SOCKET_COMM_H
 #include "socket_comm.h"
 #endif
-
+
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
-#include <openssl/err.h> 
-
+#include <openssl/err.h>
+
+#ifndef INCLUDED_STRING
+#include <string>
+#define INCLUDED_STRING
+#endif
+
 namespace rude{
 namespace sckt{
-
+
 //=
 // Initializes and provides <i><b>secure</b></i> communication services through a connected socket
 //=
 class Socket_Comm_SSH: public Socket_Comm{
-
+
 	SSL_CTX *ctx;
 	SSL *ssl;
-
+	std::string d_hostname;
+	bool d_verifypeer;
+
+	//=
+	// Stores <i>prefix</i> plus the OpenSSL error queue (and the certificate
+	// verification result, if verification failed) as the error message,
+	// so getError() reports SSL failures instead of printing to stderr.
+	//=
+	void setSSLError(const char *prefix);
+
 protected:
-
+
 	virtual int virtualsend(const char *data, int length);
 	virtual int virtualread(char *buffer, int length);
 	virtual bool virtualfinish();
 	virtual bool virtualbind();
-
+
 public:
-
+
 	Socket_Comm_SSH();
 	~Socket_Comm_SSH();
+
+	//=
+	// Sets the hostname of the destination server.
+	// Used for SNI (RFC 6066) and for certificate hostname verification.
+	// IP literals are automatically excluded from SNI.
+	//=
+	void setHostname(const char *hostname);
+
+	//=
+	// Enables / disables certificate verification (enabled by default).
+	// When enabled, the peer certificate is verified against the system's
+	// trusted CAs and checked against the hostname set with setHostname().
+	//=
+	void setVerifyPeer(bool verify);
 };
 }}
-#endif 
+#endif
 #endif
 
 

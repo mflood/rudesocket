@@ -84,16 +84,16 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 
 	int len=strlen(server);
 	char *temp = new char[len + 100];		
-	sprintf(temp,  "HTTP Proxy opening %s on port %d...", server, port);
+	snprintf(temp, len + 100, "HTTP Proxy opening %s on port %d...", server, port);
 	setMessage(temp);
 	delete [] temp;
 		
 	// everything is ok, do the connect thingy.....
 	// tell the proxy server where to connect to
 	//
-	char *buf=new char[200];
+	char *buf=new char[len + 200];
 		
-	sprintf(buf, "CONNECT %s:%d HTTP/1.1\n\n",server, port);
+	snprintf(buf, len + 200, "CONNECT %s:%d HTTP/1.1\n\n",server, port);
 		
 	int rc=s_socketcomm->send( buf, strlen(buf));
 		
@@ -127,7 +127,7 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 	
 	// not really needed since we're not printing it...
 	//
-	buf[rc]=(char) NULL;
+	buf[rc]='\0';
 	if(rc < 12)
 	{
 		delete [] buf;
@@ -139,15 +139,15 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 
 	if(buf[9] != '2')
 	{
-		int returncode;
+		int returncode = 0;
 		sscanf(&buf[9], "%d", &returncode);
 	
 		delete [] buf;
-		char *temp = new char[100];
-		sprintf(temp, "HTTP Proxy connection failed (%d)", returncode);
+		char *errbuf = new char[100];
+		snprintf(errbuf, 100, "HTTP Proxy connection failed (%d)", returncode);
 		
-		setError(temp);
-		delete [] temp;
+		setError(errbuf);
+		delete [] errbuf;
 		
 		return false;
 	}
