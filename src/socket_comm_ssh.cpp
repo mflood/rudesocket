@@ -399,11 +399,66 @@ bool Socket_Comm_SSH::virtualbind()
 
 	// communicate!!
 	/////////////////////////////////////////////
-	int err = SSL_connect(ssl);
-	if(err != 1)
+	//
+	// setTimeout() has to bound the handshake too, not just the reads
+	// that follow it.  A peer that accepts the TCP connection and then
+	// never speaks TLS - a plaintext service on an https port, a
+	// half-open load balancer - left SSL_connect() blocked in the kernel
+	// forever.
+	//
+	int timeoutsec = getTimeoutSecs();
+	int timeoutmicrosec = getTimeoutMicroSecs();
+	bool hastimeout = (timeoutsec > 0 || timeoutmicrosec > 0);
+
+	NonBlockingScope nonblocking(hastimeout ? getSocketDescriptor() : (SOCKET) -1);
+
+	SocketClock::time_point deadline = SocketClock::now()
+		+ std::chrono::seconds(timeoutsec)
+		+ std::chrono::microseconds(timeoutmicrosec);
+
+	while(1)
 	{
-		setSSLError("Socket_Comm_SSH SSL handshake failed");
-		return false;
+		int err = SSL_connect(ssl);
+		if(err == 1)
+		{
+			break;
+		}
+
+		int sslerror = SSL_get_error(ssl, err);
+		if(!hastimeout ||
+		   (sslerror != SSL_ERROR_WANT_READ && sslerror != SSL_ERROR_WANT_WRITE))
+		{
+			setSSLError("Socket_Comm_SSH SSL handshake failed");
+			return false;
+		}
+
+		struct timeval tv;
+		if(!remainingUntil(deadline, &tv))
+		{
+			setError("Socket_Comm_SSH timed out during SSL handshake");
+			return false;
+		}
+
+		fd_set fd;
+		FD_ZERO(&fd);
+		FD_SET(getSocketDescriptor(), &fd);
+		int maxDescriptor = (int) getSocketDescriptor() + 1;
+
+		bool wantwrite = (sslerror == SSL_ERROR_WANT_WRITE);
+		int rc = select(maxDescriptor,
+			wantwrite ? (fd_set*) 0 : &fd,
+			wantwrite ? &fd : (fd_set*) 0,
+			(fd_set*) 0, &tv);
+		if(rc < 0)
+		{
+			setError("Socket_Comm_SSH select failed during SSL handshake");
+			return false;
+		}
+		if(rc == 0)
+		{
+			setError("Socket_Comm_SSH timed out during SSL handshake");
+			return false;
+		}
 	}
 	//printf ("SSL connection using %s\n", SSL_get_cipher(ssl));
 	return true;
