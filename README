@@ -1,27 +1,40 @@
 README for RudeSocket
 See the end of file for copying conditions
 
-This file contains the following sections, please
-glance through them all before installing RudeSocket.
-
-	* Introduction
-	* Bug Reporting
-	* Windows Builds
-	* Copying
-	
 
 *** INTRODUCTION ***
 
-RudeSocket is a library provides client socket services to an application.
-In addition to normal TCP connections, it supports proxies, SOCK4 and SOCKS5 servers.
-Furthermore, it allows you to chain proxies together.
+RudeSocket is a library that provides client socket services to an
+application.  In addition to normal TCP connections, it supports TLS, proxies,
+SOCKS4 and SOCKS5 servers, and chaining proxies together.
 
-Documentation, discussions, and new releases are available at 
+Full documentation, including a quick start and API notes, is in README.md.
 
-http://www.rudeserver.com/
+
+*** BUILDING ***
+
+RudeSocket builds with CMake:
+
+	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake --build build
+	ctest --test-dir build
+	cmake --install build
+
+Then include <rude/socket.h> and link with -lrudesocket, or use
+find_package(rudesocket) from CMake, or pkg-config.
+
+TLS support requires OpenSSL and is enabled automatically when it is found.
+Build with -DRUDESOCKET_WITH_SSL=OFF to leave it out.  Note that when
+linking the static library, pkg-config needs --static to pull in
+-lssl and -lcrypto.
+
+The autotools build (configure / Makefile.am) was removed in this release.
+It had been deprecated since the CMake build landed, and its shipped
+config.guess dated from 2003, so it could not configure on any ARM machine -
+which today means every Apple Silicon Mac and every ARM Linux server.  If you
+need it, check out the v1.4.1 tag or earlier.
 
 See file `COPYING' for copying conditions.
-See file `INSTALL' for compilation and installation instructions.
 See file `NEWS' for a list of major changes in the current release.
 See file `THANKS' for a list of contributors.
 See file 'AUTHORS' for contact information
@@ -29,35 +42,16 @@ See file 'AUTHORS' for contact information
 
 *** BUG REPORTING ***
 
-Please Send bug reports to <rudesocket@rudeserver.com>.
-A bug report should contain an adequate description of the 
-problem, your input, what you expected, what you got, 
-and why this is wrong.  Where applicable, please submit actual data
-files with your report. 
+Please report bugs at https://github.com/mflood/rudesocket/issues
 
-Your feedback will help us to make a better and more portable package.
-Consider documentation errors as bugs, and report them as such.  If you
-develop anything pertaining to RudeSocket or have suggestions, let us know
-and share your findings by writing to <rudesocket@rudeserver.com> or
-by visiting the discussion forum accessable from the RudeServer 
-website at http://www.rudeserver.com/
+A bug report should contain an adequate description of the problem, your
+input, what you expected, what you got, and why this is wrong.  Where
+applicable, please include actual data files.  Consider documentation errors
+as bugs, and report them as such.
 
-*** WINDOWS BUILDS ***
+The rudeserver.com addresses and discussion forum referenced by older
+releases are no longer active.
 
-To build on windows, you will need to define WIN32 when compiling.
-e.g. for Borland bcc32, cd to the src directory and run:
-
- bcc32 -c -DWIN32 *.cpp
- dir /B *.obj > objectlist.txt
- for /F %i in (objectlist.txt) do @tlib rudesocket.lib +%i
-
-To include SSL support for windows, you must also define USING_OPENSSL
-You will need to build openssl for your platform and locate the include 
-directory that is created (/inc32)
-
- bcc32 -c -DWIN32 -DUSING_OPENSSL -I/OpenSSLPath/inc32 *.cpp 
- dir /B *.obj > objectlist.txt
- for /F %i in (objectlist.txt) do @tlib rudesocket.lib +%i
 
 *** COPYING ***
 

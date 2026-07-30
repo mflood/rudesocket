@@ -107,7 +107,7 @@ Or vendor it with `FetchContent`:
 include(FetchContent)
 FetchContent_Declare(rudesocket
     GIT_REPOSITORY https://github.com/mflood/rudesocket
-    GIT_TAG master)
+    GIT_TAG v1.4.1)
 FetchContent_MakeAvailable(rudesocket)
 target_link_libraries(myapp PRIVATE rudesocket::rudesocket)
 ```
