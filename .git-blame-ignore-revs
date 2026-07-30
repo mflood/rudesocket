@@ -1,0 +1,8 @@
+# Revisions that are pure reformatting. Ignore them when running git blame:
+#
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub applies this file automatically in its blame view.
+
+# Apply clang-format across the tree (Phase 2 track 4)
+3b283075354feaa843edd55ad0dff4ff26a6c598

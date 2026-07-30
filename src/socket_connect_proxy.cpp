@@ -9,12 +9,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2, or (at your option)
 // any later version.
-// 
+//
 // RudeSocket is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with RudeSocket; (see COPYING) if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -22,56 +22,65 @@
 //------------------------------------------------------------------------
 
 #include "socket_connect_proxy.h"
-
+
+
 #ifndef INCLUDED_SOCKET_COMM_NORMAL_H
 #include "socket_comm_normal.h"
 #endif
-
+
+
 #ifndef INCLUDED_STDIO_H
 #include <stdio.h>
 #define INCLUDED_STDIO_H
 #endif
-
+
+
 #ifndef INCLUDED_STRING_H
 #include <string.h>
 #define INCLUDED_STRING_H
 #endif
-
+
+
 #ifndef INCLUDED_IOSTREAM
 #include <iostream>
 #define INCLUDED_IOSTREAM
 #endif
 
 using namespace std;
-
-namespace rude{
-namespace sckt{
-
+
+
+namespace rude
+{
+namespace sckt
+{
+
+
 Socket_Connect_Proxy::Socket_Connect_Proxy()
 {
-	s_socketcomm=new Socket_Comm_Normal();
+	s_socketcomm = new Socket_Comm_Normal();
 }
-	
+
 Socket_Connect_Proxy::~Socket_Connect_Proxy()
 {
 	delete s_socketcomm;
 }
-
+
+
 bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port)
 {
 	// we're using a socket_comm to do the talking...
 	//
 	s_socketcomm->bind(s);
-	s_socketcomm->setTimeout( getTimeoutSecs() ,getTimeoutMicroSecs());
-	
+	s_socketcomm->setTimeout(getTimeoutSecs(), getTimeoutMicroSecs());
+
 	// we are expecting a socket that is already connected...
 	// and we expect destip and destport to be valid....
-	if(port <=0)
+	if(port <= 0)
 	{
 		setError("Port not set for HTTP Proxy connection");
 		return false;
 	}
-	if(server == (char*) NULL || strlen(server) ==0)
+	if(server == (char *) NULL || strlen(server) == 0)
 	{
 		setError("Server Not Set for HTTP Proxy connection");
 		return false;
@@ -81,89 +90,96 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 		setError("Socket is not connected yet! Can't initiate HTTP Proxy connection");
 		return false;
 	}
-
-	int len=strlen(server);
-	char *temp = new char[len + 100];		
+
+
+	int len = strlen(server);
+	char *temp = new char[len + 100];
 	snprintf(temp, len + 100, "HTTP Proxy opening %s on port %d...", server, port);
 	setMessage(temp);
-	delete [] temp;
-		
+	delete[] temp;
+
 	// everything is ok, do the connect thingy.....
 	// tell the proxy server where to connect to
 	//
-	char *buf=new char[len + 200];
-		
-	snprintf(buf, len + 200, "CONNECT %s:%d HTTP/1.1\n\n",server, port);
-		
-	int rc=s_socketcomm->send( buf, strlen(buf));
-		
-     if(rc <=0)
-     {
-     	setError("Socket_Connect_Proxy::simpleConnect() failed. Could not send()");
-		delete [] buf;
-     	return false;
-     }
-
+	char *buf = new char[len + 200];
+
+	snprintf(buf, len + 200, "CONNECT %s:%d HTTP/1.1\n\n", server, port);
+
+	int rc = s_socketcomm->send(buf, strlen(buf));
+
+	if(rc <= 0)
+	{
+		setError("Socket_Connect_Proxy::simpleConnect() failed. Could not send()");
+		delete[] buf;
+		return false;
+	}
+
+
 	// NOW WE Get back a normal HTTP response ... a 2xx response code means we were successful
 	// eg. "HTTP/1.0 200 Connection Established" = good
 	// eg. "HTTP/1.0 404 Not Found" = bad
-
+
+
 	// so read in 12 bytes of data
-		
-	rc=s_socketcomm->read( buf, 12);
-
+
+	rc = s_socketcomm->read(buf, 12);
+
+
 	if(rc < 0)
 	{
 		setError(s_socketcomm->getError());
-		delete [] buf;
+		delete[] buf;
 		return false;
 	}
 	if(rc == 0)
 	{
 		setError(s_socketcomm->getError());
-		delete [] buf;
+		delete[] buf;
 		return false;
 	}
-	
+
 	// not really needed since we're not printing it...
 	//
-	buf[rc]='\0';
+	buf[rc] = '\0';
 	if(rc < 12)
 	{
-		delete [] buf;
+		delete[] buf;
 		setError("HTTP Proxy Connection failed - did not send back enough info");
-		return false;		
+		return false;
 	}
-		
+
 	// check that position 9 of return buf is a 2
-
+
+
 	if(buf[9] != '2')
 	{
 		int returncode = 0;
 		sscanf(&buf[9], "%d", &returncode);
-	
-		delete [] buf;
+
+		delete[] buf;
 		char *errbuf = new char[100];
 		snprintf(errbuf, 100, "HTTP Proxy connection failed (%d)", returncode);
-		
+
 		setError(errbuf);
-		delete [] errbuf;
-		
+		delete[] errbuf;
+
 		return false;
 	}
-
-	delete [] buf;
-
+
+
+	delete[] buf;
+
+
 	// now we need to get down to the end of the Proxy Headers to enable conversation
 	// with the destination server....
 	// we're looking for 0x0D 0x0A 0x0D 0x0A (CRLF CRLF)
 	char c;
-	char lastchar=(char)0;
-	char seclastchar=(char) 0;
+	char lastchar = (char) 0;
+	char seclastchar = (char) 0;
 	while(1)
 	{
-		rc=s_socketcomm->read(  &c, 1);
-		//cout << c;
+		rc = s_socketcomm->read(&c, 1);
+		// cout << c;
 		if(rc > 0)
 		{
 			if(c == 0x0a)
@@ -174,7 +190,7 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 					return true;
 				}
 			}
-			seclastchar=lastchar;
+			seclastchar = lastchar;
 			lastchar = c;
 		}
 		else
@@ -185,5 +201,7 @@ bool Socket_Connect_Proxy::simpleConnect(SOCKET &s, const char *server, int port
 	setError("Proxy Connection was good, but could not read entire set of headers...");
 	return false;
 }
-
-}}
+
+
+} // namespace sckt
+} // namespace rude

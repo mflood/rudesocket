@@ -9,12 +9,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2, or (at your option)
 // any later version.
-// 
+//
 // RudeSocket is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with RudeSocket; (see COPYING) if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -24,7 +24,8 @@
 
 #ifndef INCLUDED_PLATFORM_H
 #define INCLUDED_PLATFORM_H
-
+
+
 
 #ifdef WIN32
 
@@ -38,16 +39,19 @@
 ////#ifdef WIN32
 ////WSACleanup();
 ////#endif
-
+
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
+
+
 #ifndef INCLUDED_WINSOCK2_H
 #include <winsock2.h>
 #define INCLUDED_WINSOCK2_H
 #endif
-
+
+
 #ifndef INCLUDED_WS2TCPIP_H
 #include <ws2tcpip.h>
 #define INCLUDED_WS2TCPIP_H
@@ -65,15 +69,17 @@
 
 // LINUX
 #include <sys/socket.h> // for connect() socket() and bind()
-#include <sys/time.h> // for timeval{}
+#include <sys/time.h>	// for timeval{}
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h> // for close(socket)
 #define SOCKET int
-#define LPHOSTENT hostent*
-
-
+#define LPHOSTENT hostent *
+
+
+
 #endif
-
+
+
 #endif
