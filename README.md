@@ -50,8 +50,13 @@ socket.close();
 Compile with:
 
 ```sh
-c++ -std=c++17 app.cpp $(pkg-config --cflags --libs rudesocket)
+c++ -std=c++17 app.cpp $(pkg-config --cflags --libs --static rudesocket)
 ```
+
+`--static` matters: rudesocket builds a static library by default, and OpenSSL
+is a private dependency, so a plain `pkg-config --libs` leaves out `-lssl
+-lcrypto` and the link fails with undefined symbols. Drop `--static` only if
+you built with `-DBUILD_SHARED_LIBS=ON`.
 
 **Behavior change (1.3.0): `connectSSL()` now verifies the server's
 certificate by default.** The certificate chain is checked against the
@@ -108,7 +113,8 @@ target_link_libraries(myapp PRIVATE rudesocket::rudesocket)
 ```
 
 When the library was built with SSL, the compile definition
-`RUDESOCKET_WITH_SSL` is exported to consumers.
+`RUDESOCKET_WITH_SSL` is exported to consumers — through the CMake target, and
+through `pkg-config --cflags` as of 1.4.1.
 
 ## API notes
 
