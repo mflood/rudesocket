@@ -3,8 +3,15 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
-Release 1.3.1 - Matthew Flood 2026-07-30
+Release 1.4.0 - Matthew Flood 2026-07-30
 
+	- BEHAVIOR CHANGE: readline() and reads() now return NULL at end of
+	  stream (see below).  They previously returned an empty, non-NULL
+	  string.  The header always documented NULL, so this restores the
+	  documented contract - but code written against what the functions
+	  actually did, rather than what they promised, will now see NULL
+	  where it used to see "".  Released as 1.4.0 rather than 1.3.1 for
+	  that reason.
 	- Fixed setTimeout() being ignored on SSL reads.  1.3.0's notes below
 	  claimed this was already fixed; it was not.  The socket is blocking
 	  once connect() returns, so select()-then-SSL_read() was not enough:
@@ -43,7 +50,7 @@ Release 1.3.0 - Matthew Flood 2026-07-30
 	  setTimeout() on SSL reads and sends, and report SSL errors through
 	  getError() instead of printing to stderr.
 	  CORRECTION: the setTimeout() part of that claim was wrong - SSL
-	  reads still blocked past the deadline.  Fixed in 1.3.1.
+	  reads still blocked past the deadline.  Fixed in 1.4.0.
 	- New CMake build system (autotools files retained but deprecated);
 	  installs CMake package config and pkg-config files. SSL support is
 	  optional: -DRUDESOCKET_WITH_SSL=OFF builds without OpenSSL, and
