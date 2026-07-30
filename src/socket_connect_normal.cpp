@@ -133,7 +133,7 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 		FD_SET(socket, &wset);
 
 		tv.tv_sec = msec / 1000;
-		tv.tv_usec = 1000 * (msec % 1000);
+		tv.tv_usec = (long) 1000 * (msec % 1000);
 
 		ret = select(socket + 1, NULL, &wset, NULL, &tv);
 
