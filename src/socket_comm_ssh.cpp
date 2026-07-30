@@ -310,7 +310,6 @@ int Socket_Comm_SSH::virtualsend(const char *data, int length)
 			}
 			continue;
 		}
-		wantread = false;
 		if(sslerror == SSL_ERROR_ZERO_RETURN)
 		{
 			setError("Socket_Comm_SSH virtualsend - peer terminated");
@@ -571,7 +570,6 @@ int Socket_Comm_SSH::virtualread(char *buffer, int length)
 			}
 			continue;
 		}
-		wantwrite = false;
 		if(sslerror == SSL_ERROR_ZERO_RETURN)
 		{
 			setError("Socket_Comm_SSH virtualread - peer terminated");
