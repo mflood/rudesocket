@@ -54,8 +54,10 @@
 
 using namespace std;
 
-namespace rude{
-namespace sckt{
+namespace rude
+{
+namespace sckt
+{
 
 //=
 // Returns true if 'host' looks like an IPv4 or IPv6 address literal.
@@ -107,11 +109,12 @@ static bool remainingUntil(const SocketClock::time_point &deadline, struct timev
 //=
 class NonBlockingScope
 {
-public:
+  public:
 	explicit NonBlockingScope(SOCKET sock)
 		: d_socket(sock), d_restore(false)
 #ifndef WIN32
-		, d_oldflags(0)
+		  ,
+		  d_oldflags(0)
 #endif
 	{
 #ifdef WIN32
@@ -145,9 +148,12 @@ public:
 
 	// True if the socket really is non-blocking now.
 	//
-	bool ok() const { return d_restore; }
+	bool ok() const
+	{
+		return d_restore;
+	}
 
-private:
+  private:
 	NonBlockingScope(const NonBlockingScope &);
 	NonBlockingScope &operator=(const NonBlockingScope &);
 
@@ -160,8 +166,8 @@ private:
 
 Socket_Comm_SSH::Socket_Comm_SSH()
 {
-	ctx = (SSL_CTX*) 0;
-	ssl = (SSL*) 0;
+	ctx = (SSL_CTX *) 0;
+	ssl = (SSL *) 0;
 	d_hostname = "";
 	d_verifypeer = true;
 
@@ -234,9 +240,7 @@ int Socket_Comm_SSH::virtualsend(const char *data, int length)
 	//
 	NonBlockingScope nonblocking(hastimeout ? getSocketDescriptor() : (SOCKET) -1);
 
-	SocketClock::time_point deadline = SocketClock::now()
-		+ std::chrono::seconds(timeoutsec)
-		+ std::chrono::microseconds(timeoutmicrosec);
+	SocketClock::time_point deadline = SocketClock::now() + std::chrono::seconds(timeoutsec) + std::chrono::microseconds(timeoutmicrosec);
 
 	bool wantread = false;
 
@@ -266,7 +270,7 @@ int Socket_Comm_SSH::virtualsend(const char *data, int length)
 				FD_SET(getSocketDescriptor(), &rfd);
 			}
 
-			int rc = select(maxDescriptor, wantread ? &rfd : (fd_set*) 0, &fd, (fd_set*) 0, &tv);
+			int rc = select(maxDescriptor, wantread ? &rfd : (fd_set *) 0, &fd, (fd_set *) 0, &tv);
 			if(rc < 0)
 			{
 				setError("Socket_Comm_SSH select failed for virtualsend");
@@ -298,7 +302,7 @@ int Socket_Comm_SSH::virtualsend(const char *data, int length)
 				FD_ZERO(&fd);
 				FD_SET(getSocketDescriptor(), &fd);
 				int maxDescriptor = (int) getSocketDescriptor() + 1;
-				if(select(maxDescriptor, (fd_set*) 0, &fd, (fd_set*) 0, (struct timeval*) 0) < 0)
+				if(select(maxDescriptor, (fd_set *) 0, &fd, (fd_set *) 0, (struct timeval *) 0) < 0)
 				{
 					setError("Socket_Comm_SSH select failed for virtualsend");
 					return -1;
@@ -323,12 +327,12 @@ bool Socket_Comm_SSH::virtualfinish()
 	{
 		SSL_shutdown(ssl);
 		SSL_free(ssl);
-		ssl = (SSL*) 0;
+		ssl = (SSL *) 0;
 	}
 	if(ctx)
 	{
 		SSL_CTX_free(ctx);
-		ctx = (SSL_CTX*) 0;
+		ctx = (SSL_CTX *) 0;
 	}
 	return true;
 }
@@ -412,9 +416,7 @@ bool Socket_Comm_SSH::virtualbind()
 
 	NonBlockingScope nonblocking(hastimeout ? getSocketDescriptor() : (SOCKET) -1);
 
-	SocketClock::time_point deadline = SocketClock::now()
-		+ std::chrono::seconds(timeoutsec)
-		+ std::chrono::microseconds(timeoutmicrosec);
+	SocketClock::time_point deadline = SocketClock::now() + std::chrono::seconds(timeoutsec) + std::chrono::microseconds(timeoutmicrosec);
 
 	while(1)
 	{
@@ -446,9 +448,9 @@ bool Socket_Comm_SSH::virtualbind()
 
 		bool wantwrite = (sslerror == SSL_ERROR_WANT_WRITE);
 		int rc = select(maxDescriptor,
-			wantwrite ? (fd_set*) 0 : &fd,
-			wantwrite ? &fd : (fd_set*) 0,
-			(fd_set*) 0, &tv);
+						wantwrite ? (fd_set *) 0 : &fd,
+						wantwrite ? &fd : (fd_set *) 0,
+						(fd_set *) 0, &tv);
 		if(rc < 0)
 		{
 			setError("Socket_Comm_SSH select failed during SSL handshake");
@@ -460,7 +462,7 @@ bool Socket_Comm_SSH::virtualbind()
 			return false;
 		}
 	}
-	//printf ("SSL connection using %s\n", SSL_get_cipher(ssl));
+	// printf ("SSL connection using %s\n", SSL_get_cipher(ssl));
 	return true;
 }
 
@@ -486,9 +488,7 @@ int Socket_Comm_SSH::virtualread(char *buffer, int length)
 	// iteration would let a peer that dribbles out records keep us here
 	// indefinitely without ever sending application data.
 	//
-	SocketClock::time_point deadline = SocketClock::now()
-		+ std::chrono::seconds(timeoutsec)
-		+ std::chrono::microseconds(timeoutmicrosec);
+	SocketClock::time_point deadline = SocketClock::now() + std::chrono::seconds(timeoutsec) + std::chrono::microseconds(timeoutmicrosec);
 
 	bool wantwrite = false;
 
@@ -525,7 +525,7 @@ int Socket_Comm_SSH::virtualread(char *buffer, int length)
 				FD_SET(getSocketDescriptor(), &wfd);
 			}
 
-			int rc = select(maxDescriptor, &fd, wantwrite ? &wfd : (fd_set*) 0, (fd_set*) 0, &tv);
+			int rc = select(maxDescriptor, &fd, wantwrite ? &wfd : (fd_set *) 0, (fd_set *) 0, &tv);
 			if(rc < 0)
 			{
 				setError("Socket_Comm_SSH select failed for virtualread");
@@ -563,7 +563,7 @@ int Socket_Comm_SSH::virtualread(char *buffer, int length)
 				FD_ZERO(&fd);
 				FD_SET(getSocketDescriptor(), &fd);
 				int maxDescriptor = (int) getSocketDescriptor() + 1;
-				if(select(maxDescriptor, &fd, (fd_set*) 0, (fd_set*) 0, (struct timeval*) 0) < 0)
+				if(select(maxDescriptor, &fd, (fd_set *) 0, (fd_set *) 0, (struct timeval *) 0) < 0)
 				{
 					setError("Socket_Comm_SSH select failed for virtualread");
 					return -1;
@@ -589,8 +589,7 @@ int Socket_Comm_SSH::virtualread(char *buffer, int length)
 	}
 }
 
-}}
+} // namespace sckt
+} // namespace rude
 
 #endif
-
-

@@ -41,13 +41,16 @@
 #define INCLUDED_STRING
 #endif
 
-namespace rude{
-namespace sckt{
+namespace rude
+{
+namespace sckt
+{
 
 //=
 // Initializes and provides <i><b>secure</b></i> communication services through a connected socket
 //=
-class Socket_Comm_SSH: public Socket_Comm{
+class Socket_Comm_SSH : public Socket_Comm
+{
 
 	SSL_CTX *ctx;
 	SSL *ssl;
@@ -61,15 +64,13 @@ class Socket_Comm_SSH: public Socket_Comm{
 	//=
 	void setSSLError(const char *prefix);
 
-protected:
-
+  protected:
 	virtual int virtualsend(const char *data, int length);
 	virtual int virtualread(char *buffer, int length);
 	virtual bool virtualfinish();
 	virtual bool virtualbind();
 
-public:
-
+  public:
 	Socket_Comm_SSH();
 	~Socket_Comm_SSH();
 
@@ -87,8 +88,7 @@ public:
 	//=
 	void setVerifyPeer(bool verify);
 };
-}}
+} // namespace sckt
+} // namespace rude
 #endif
 #endif
-
-

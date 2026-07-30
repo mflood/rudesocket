@@ -55,3 +55,36 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install clang-format
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-format-17
+
+      - name: Check formatting
+        run: |
+          files=$(git ls-files '*.cpp' '*.h')
+          echo "checking $(echo "$files" | wc -l) files"
+          clang-format-17 --dry-run --Werror $files
+
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install clang-tidy
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-tidy-17
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # .clang-tidy sets WarningsAsErrors, so any new finding fails the job.
+      # The check set is deliberately narrow and the tree is clean against it —
+      # see the comments in .clang-tidy for why each exclusion is there.
+      - name: Run clang-tidy
+        run: |
+          files=$(git ls-files 'src/*.cpp')
+          clang-tidy-17 -p build $files

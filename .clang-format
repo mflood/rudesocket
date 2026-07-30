@@ -1,0 +1,31 @@
+# Matches the style this codebase was already written in, so the initial
+# reformat stays a whitespace-only pass rather than a rewrite: tabs, Allman
+# braces, and no space between a keyword and its parenthesis.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+
+BreakBeforeBraces: Allman
+SpaceBeforeParens: Never
+SpaceAfterCStyleCast: true
+PointerAlignment: Right
+
+# The sources are CRLF; deriving avoids a line-ending-only diff on every file.
+LineEnding: DeriveCRLF
+
+# Long argument lists and doc-comment tables in the headers were laid out by
+# hand. A hard column limit would reflow all of it for no benefit.
+ColumnLimit: 0
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 3
+SortIncludes: Never
+IndentCaseLabels: true
