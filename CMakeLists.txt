@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(rudesocket
-    VERSION 1.4.0
+    VERSION 1.4.1
     DESCRIPTION "C++ TCP socket client library with SSL/TLS, SOCKS4/5, and HTTP proxy support"
     HOMEPAGE_URL "https://github.com/mflood/rudesocket"
     LANGUAGES CXX)
@@ -113,8 +113,12 @@ install(FILES
 
 if(RUDESOCKET_SSL_ENABLED)
     set(PC_REQUIRES_PRIVATE "Requires.private: openssl")
+    # CMake consumers get RUDESOCKET_WITH_SSL from the exported target; give
+    # pkg-config consumers the same feature macro so they can detect SSL too.
+    set(PC_SSL_CFLAGS " -DRUDESOCKET_WITH_SSL")
 else()
     set(PC_REQUIRES_PRIVATE "")
+    set(PC_SSL_CFLAGS "")
 endif()
 # The .pc file must not bake in the configure-time CMAKE_INSTALL_PREFIX: that
 # breaks "cmake --install --prefix <dir>", which is what the README teaches.

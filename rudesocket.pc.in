@@ -9,4 +9,4 @@ URL: @PROJECT_HOMEPAGE_URL@
 Version: @PROJECT_VERSION@
 @PC_REQUIRES_PRIVATE@
 Libs: -L${libdir} -lrudesocket
-Cflags: -I${includedir}
+Cflags: -I${includedir}@PC_SSL_CFLAGS@

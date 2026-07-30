@@ -3,6 +3,17 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
+Release 1.4.1 - Matthew Flood 2026-07-30
+
+	- pkg-config consumers can now detect SSL support: rudesocket.pc
+	  defines RUDESOCKET_WITH_SSL in Cflags when the library was built
+	  with OpenSSL, matching what the exported CMake target already did.
+	- README now shows "pkg-config --static" in the compile line.  The
+	  library is static by default and OpenSSL is a private dependency,
+	  so the previous non-static command omitted -lssl/-lcrypto and the
+	  link failed with undefined symbols.
+
+_______________________________________________________________________________
 Release 1.4.0 - Matthew Flood 2026-07-30
 
 	- BEHAVIOR CHANGE: readline() and reads() now return NULL at end of

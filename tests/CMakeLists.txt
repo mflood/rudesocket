@@ -36,6 +36,14 @@ endforeach()
 # Guards the 1.3.1 pkg-config fix: rudesocket.pc must not hardcode the
 # configure-time prefix, or "cmake --install --prefix <dir>" ships a .pc
 # pointing somewhere else entirely (worst case, an older system copy).
+# Guards that pkg-config consumers can detect SSL the same way CMake
+# consumers can (1.4.1).
+add_test(NAME pkgconfig_ssl
+    COMMAND "${CMAKE_COMMAND}"
+        "-DPC_FILE=${CMAKE_BINARY_DIR}/rudesocket.pc"
+        "-DEXPECT_SSL=$<BOOL:${RUDESOCKET_SSL_ENABLED}>"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/check_pc_ssl.cmake")
+
 add_test(NAME pkgconfig_relocatable
     COMMAND "${CMAKE_COMMAND}"
         "-DPC_FILE=${CMAKE_BINARY_DIR}/rudesocket.pc"
