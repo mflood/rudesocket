@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(rudesocket
-    VERSION 1.3.1
+    VERSION 1.4.0
     DESCRIPTION "C++ TCP socket client library with SSL/TLS, SOCKS4/5, and HTTP proxy support"
     HOMEPAGE_URL "https://github.com/mflood/rudesocket"
     LANGUAGES CXX)
