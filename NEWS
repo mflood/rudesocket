@@ -3,6 +3,30 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
+Release 1.5.0 - Matthew Flood 2026-07-30
+
+	- REMOVED: the autotools build (configure, configure.ac, Makefile.am,
+	  Makefile.in, aclocal.m4, config.guess, config.sub, install-sh,
+	  ltmain.sh, missing, depcomp and INSTALL).  It has been deprecated
+	  since the CMake build landed, and the config.guess it shipped dated
+	  from 2003, so it could not configure on any ARM machine - today that
+	  means every Apple Silicon Mac and every ARM Linux server.  Its
+	  install-sh was also committed without an executable bit, so
+	  "make install" failed on macOS.  Check out v1.4.1 or earlier if you
+	  still need it.
+	- Consumers using FetchContent no longer inherit this project's demo
+	  and test_* targets.  Tests and examples are now added only when this
+	  is the top-level project.
+	- The FetchContent example in README.md now pins GIT_TAG to v1.4.1
+	  rather than tracking master.
+	- The plain README no longer points at the removed INSTALL file or at
+	  rudeserver.com addresses that stopped resolving years ago; bug
+	  reports go to GitHub issues.
+	- Removed the Borland bcc32 build instructions from README.  CMake
+	  builds on Windows and is covered by CI; the hand-rolled bcc32
+	  recipe had not been exercised in over a decade.
+
+_______________________________________________________________________________
 Release 1.4.1 - Matthew Flood 2026-07-30
 
 	- setTimeout() now bounds the SSL handshake, not just the reads and

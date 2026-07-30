@@ -1,13 +1,28 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(rudesocket
-    VERSION 1.4.1
+    VERSION 1.5.0
     DESCRIPTION "C++ TCP socket client library with SSL/TLS, SOCKS4/5, and HTTP proxy support"
     HOMEPAGE_URL "https://github.com/mflood/rudesocket"
     LANGUAGES CXX)
 
+# PROJECT_IS_TOP_LEVEL is CMake 3.21+; this project still supports 3.16, and
+# an undefined variable would read as false and silently drop the tests.
+if(NOT DEFINED PROJECT_IS_TOP_LEVEL)
+    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+        set(PROJECT_IS_TOP_LEVEL TRUE)
+    else()
+        set(PROJECT_IS_TOP_LEVEL FALSE)
+    endif()
+endif()
+
 include(GNUInstallDirs)
-include(CTest)
+# Only offer tests and examples when this is the top-level project.
+# Without the guard, a FetchContent consumer inherits our demo and
+# test_* targets into their own build.
+if(PROJECT_IS_TOP_LEVEL)
+    include(CTest)
+endif()
 
 option(RUDESOCKET_BUILD_EXAMPLES "Build example programs" ON)
 option(RUDESOCKET_WITH_SSL "Build with SSL/TLS support (requires OpenSSL)" ON)
@@ -153,10 +168,10 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/rudesocket.pc"
 
 # ---- Tests & examples ----
 
-if(BUILD_TESTING)
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-if(RUDESOCKET_BUILD_EXAMPLES)
+if(PROJECT_IS_TOP_LEVEL AND RUDESOCKET_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
