@@ -62,6 +62,11 @@ bool Socket::connectSSL(const char *server, int port)
 {
 	return d_implementation->connectSSL(server, port);
 }
+
+void Socket::setSSLVerify(bool verify)
+{
+	d_implementation->setSSLVerify(verify);
+}
 
 bool Socket::insertTunnel(const char *server, int port)
 {

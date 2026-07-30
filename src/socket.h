@@ -138,8 +138,20 @@ public:
 	//! Connects to the specified server and port over a secure connection
 	/*!
 		 If proxies have been specified, the connection passes through them first.
+		 The server's certificate is verified by default - see setSSLVerify().
 	*/
 	bool connectSSL(const char *server, int port);
+
+	//! Enables or disables SSL certificate verification (enabled by default)
+	/*!
+		When enabled (the default), connectSSL() verifies the server's
+		certificate chain against the system's trusted CA certificates and
+		checks that the certificate matches the requested hostname; the
+		connection fails otherwise (see getError()).
+		Call setSSLVerify(false) before connectSSL() to accept any
+		certificate - for example a self-signed certificate on a test server.
+	*/
+	void setSSLVerify(bool verify);
 
 	//! Inserts a transparent tunnel into the connect chain
 	/*!

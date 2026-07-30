@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+# Things created by Configure
+.deps/
+Makefile
+config.log
+config.status
+libtool
+
+# CMake build trees and local installs
+build/
+build-*/
+local-install/

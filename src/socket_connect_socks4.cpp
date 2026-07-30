@@ -145,7 +145,7 @@ bool Socket_Connect_Socks4::simpleConnect(SOCKET &s, const char *server, int por
 	{
 		// error ....
 		char *temp = new char[1000];
-		sprintf(temp, "Socks4 only sent back %d bytes, expecting 8. %s", rc, s_socketcomm->getError());
+		snprintf(temp, 1000, "Socks4 only sent back %d bytes, expecting 8. %s", rc, s_socketcomm->getError());
 		
 		setError(temp);
 		delete [] temp;

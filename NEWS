@@ -2,6 +2,30 @@ RudeSocket NEWS - User visible changes.
 See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
+_______________________________________________________________________________
+Release 1.3.0 - Matthew Flood 2026-07-30
+
+	- BEHAVIOR CHANGE: connectSSL() now verifies the server's certificate
+	  by default (system CA store + hostname check) and fails otherwise.
+	  Call the new Socket::setSSLVerify(false) to accept self-signed or
+	  mismatched certificates.
+	- TLS repair: send SNI (modern servers rejected the handshake without
+	  it), use the OpenSSL >= 1.1 API (TLS_client_method), consult
+	  SSL_pending() so readline() over SSL no longer deadlocks, honor
+	  setTimeout() on SSL reads and sends, and report SSL errors through
+	  getError() instead of printing to stderr.
+	- New CMake build system (autotools files retained but deprecated);
+	  installs CMake package config and pkg-config files. SSL support is
+	  optional: -DRUDESOCKET_WITH_SSL=OFF builds without OpenSSL, and
+	  connectSSL() then fails gracefully with a clear error message
+	  (previously it silently fell back to an UNENCRYPTED connection).
+	- Code modernized to compile cleanly as C++17 with -Wall -Wextra
+	  (sprintf -> snprintf, unused parameters, Windows header ordering).
+	- Added test suite (ctest: echo, timeout, and SSL tests against a
+	  local openssl s_server) and GitHub Actions CI covering Linux
+	  x86_64/ARM, macOS, and Windows, plus an ASan/UBSan job.
+	- New README with verified quick-start examples.
+
 _____________________________________________________________
 Release 1.2.0-1 Tue Jan 29 2008
 - It is now easier to build the library on windows

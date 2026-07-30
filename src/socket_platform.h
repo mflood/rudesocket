@@ -39,14 +39,23 @@
 ////WSACleanup();
 ////#endif
 
-#ifndef INCLUDED_WINDOWS_H
-#include <windows.h>
-#define INCLUDED_WINDOWS_H
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
 
 #ifndef INCLUDED_WINSOCK2_H
 #include <winsock2.h>
 #define INCLUDED_WINSOCK2_H
+#endif
+
+#ifndef INCLUDED_WS2TCPIP_H
+#include <ws2tcpip.h>
+#define INCLUDED_WS2TCPIP_H
+#endif
+
+#ifndef INCLUDED_WINDOWS_H
+#include <windows.h>
+#define INCLUDED_WINDOWS_H
 #endif
 
 #define socklen_t int

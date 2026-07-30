@@ -192,7 +192,7 @@ bool Socket_Connect_Socks5::simpleConnect(SOCKET &s, const char *server, int por
 			if(rc < 2)
 			{
 			    char status[80];
-				sprintf(status, "Could not read authentication response, received %d bytes instead of 2", rc);
+				snprintf(status, sizeof(status), "Could not read authentication response, received %d bytes instead of 2", rc);
 				setError(status);
 				return false;
 			}
@@ -222,7 +222,7 @@ bool Socket_Connect_Socks5::simpleConnect(SOCKET &s, const char *server, int por
 	//       o  IP V4 address: X'01'
 	//       o  DOMAINNAME: X'03'
 	//       o  IP V6 address: X'04'
-	d_buffer[x++]=servlen;
+	d_buffer[x++]=(char) servlen;
 	for(y=0; y< servlen; y++)
 	{
 		d_buffer[x++]=server[y];

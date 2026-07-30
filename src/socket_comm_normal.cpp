@@ -205,10 +205,9 @@ int Socket_Comm_Normal::virtualread(char *buffer, int bufferlength)
 			
 			if(rc == 0)
 			{
-				char *buffer = new char[100];
-				sprintf(buffer, "Socket_Comm_Normal timed out on virtualread. Seconds: %d  Milli: %d", timeoutsec, timeoutmicrosec);
-				setError(buffer);
-				delete [] buffer;
+				char msg[100];
+				snprintf(msg, sizeof(msg), "Socket_Comm_Normal timed out on virtualread. Seconds: %d  Milli: %d", timeoutsec, timeoutmicrosec);
+				setError(msg);
 				// timed out
 				return -1;
 			}

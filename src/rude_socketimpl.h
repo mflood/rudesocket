@@ -45,6 +45,8 @@ class Rude_SocketImpl{
 
 	Socket_TCPClient d_tcpclient;
 	Socket_Connect *d_lastconnect;
+	bool d_sslverify;
+	std::string d_sslerror;
 
 public:
 
@@ -77,6 +79,11 @@ public:
 	//
 	//=
 	bool connectSSL(const char *server, int port);
+
+	//=
+	// Enables / disables SSL certificate verification (enabled by default)
+	//=
+	void setSSLVerify(bool verify);
 
 	//=
 	//

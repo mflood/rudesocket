@@ -133,6 +133,7 @@ void Socket_Connect::setMessage(const char *message)
 	// make this method happen in the future
 	//
 	//cout << ":::" << message <<"\n";
+	(void) message;
 }
 
 void Socket_Connect::setError(const char *error)
