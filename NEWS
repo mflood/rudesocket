@@ -5,6 +5,11 @@ See the end for copying conditions.
 _______________________________________________________________________________
 Release 1.4.1 - Matthew Flood 2026-07-30
 
+	- setTimeout() now bounds the SSL handshake, not just the reads and
+	  sends that follow it.  A peer that accepted the TCP connection and
+	  then never spoke TLS - a plaintext service on an https port, a
+	  half-open load balancer - left connectSSL() blocked in the kernel
+	  indefinitely, whatever timeout had been set.
 	- pkg-config consumers can now detect SSL support: rudesocket.pc
 	  defines RUDESOCKET_WITH_SSL in Cflags when the library was built
 	  with OpenSSL, matching what the exported CMake target already did.

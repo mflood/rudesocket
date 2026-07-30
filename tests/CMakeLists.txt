@@ -8,11 +8,15 @@ add_executable(test_timeout test_timeout.cpp)
 target_link_libraries(test_timeout PRIVATE rudesocket::rudesocket Threads::Threads)
 add_test(NAME timeout COMMAND test_timeout)
 
+add_executable(test_contract test_contract.cpp)
+target_link_libraries(test_contract PRIVATE rudesocket::rudesocket Threads::Threads)
+add_test(NAME contract COMMAND test_contract)
+
 add_executable(test_readline_eof test_readline_eof.cpp)
 target_link_libraries(test_readline_eof PRIVATE rudesocket::rudesocket Threads::Threads)
 add_test(NAME readline_eof COMMAND test_readline_eof)
 
-set(rudesocket_tests echo timeout readline_eof)
+set(rudesocket_tests echo timeout readline_eof contract)
 
 if(RUDESOCKET_SSL_ENABLED)
     add_executable(test_ssl test_ssl.cpp)
