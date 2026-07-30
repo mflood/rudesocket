@@ -182,8 +182,19 @@ const char *Socket_TCPClient::reads()
 		}
 		else if(rc == 0)
 		{
-			// peer terminated
+			// Peer terminated.  If anything arrived before the close, hand
+			// back that final unterminated chunk; otherwise report EOF as
+			// NULL so that the usual
 			//
+			//     while((line = socket.readline()) != NULL)
+			//
+			// loop terminates.  Returning an empty non-NULL string on every
+			// call after the peer went away made that loop spin forever.
+			//
+			if(d_readbuffer.empty())
+			{
+				return (char*) 0;
+			}
 			return d_readbuffer.c_str();
 		}
 		else
@@ -224,8 +235,19 @@ const char *Socket_TCPClient::readline()
 		}
 		else if(rc == 0)
 		{
-			// peer terminated
+			// Peer terminated.  If anything arrived before the close, hand
+			// back that final unterminated chunk; otherwise report EOF as
+			// NULL so that the usual
 			//
+			//     while((line = socket.readline()) != NULL)
+			//
+			// loop terminates.  Returning an empty non-NULL string on every
+			// call after the peer went away made that loop spin forever.
+			//
+			if(d_readbuffer.empty())
+			{
+				return (char*) 0;
+			}
 			return d_readbuffer.c_str();
 		}
 		else

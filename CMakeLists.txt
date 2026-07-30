@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(rudesocket
-    VERSION 1.3.0
+    VERSION 1.3.1
     DESCRIPTION "C++ TCP socket client library with SSL/TLS, SOCKS4/5, and HTTP proxy support"
     HOMEPAGE_URL "https://github.com/mflood/rudesocket"
     LANGUAGES CXX)
@@ -116,6 +116,33 @@ if(RUDESOCKET_SSL_ENABLED)
 else()
     set(PC_REQUIRES_PRIVATE "")
 endif()
+# The .pc file must not bake in the configure-time CMAKE_INSTALL_PREFIX: that
+# breaks "cmake --install --prefix <dir>", which is what the README teaches.
+# Express prefix relative to ${pcfiledir} instead, so the file stays correct
+# wherever it lands.  Walk back up one "../" per component of
+# <libdir>/pkgconfig -- computed by hand rather than with file(RELATIVE_PATH),
+# which requires absolute arguments and rejects "/" as a root on Windows.
+# Falls back to the absolute prefix if the caller set an absolute
+# CMAKE_INSTALL_LIBDIR, where a relative path is not meaningful.
+if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+    set(RUDESOCKET_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+else()
+    file(TO_CMAKE_PATH "${CMAKE_INSTALL_LIBDIR}/pkgconfig" RUDESOCKET_PC_SUBDIR)
+    string(REGEX REPLACE "/+" "/" RUDESOCKET_PC_SUBDIR "${RUDESOCKET_PC_SUBDIR}")
+    string(REGEX REPLACE "^/+|/+$" "" RUDESOCKET_PC_SUBDIR "${RUDESOCKET_PC_SUBDIR}")
+    string(REPLACE "/" ";" RUDESOCKET_PC_PARTS "${RUDESOCKET_PC_SUBDIR}")
+    set(RUDESOCKET_PC_REL_PREFIX "")
+    foreach(part IN LISTS RUDESOCKET_PC_PARTS)
+        if(NOT part STREQUAL "" AND NOT part STREQUAL ".")
+            string(APPEND RUDESOCKET_PC_REL_PREFIX "../")
+        endif()
+    endforeach()
+    if(RUDESOCKET_PC_REL_PREFIX STREQUAL "")
+        set(RUDESOCKET_PC_REL_PREFIX "./")
+    endif()
+    set(RUDESOCKET_PC_PREFIX "\${pcfiledir}/${RUDESOCKET_PC_REL_PREFIX}")
+endif()
+
 configure_file(rudesocket.pc.in "${CMAKE_CURRENT_BINARY_DIR}/rudesocket.pc" @ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/rudesocket.pc"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")

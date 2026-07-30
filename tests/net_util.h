@@ -85,6 +85,24 @@ public:
         net_close(c);
     }
 
+    // Accept one client, send 'data', then close immediately. Used to test
+    // that readline()/reads() report EOF rather than an endless empty string.
+    void runSendThenClose(const char *data)
+    {
+        net_socket_t c = ::accept(d_listen, 0, 0);
+        if (c == NET_INVALID_SOCKET)
+            return;
+        int len = (int)std::strlen(data);
+        int off = 0;
+        while (off < len) {
+            int sent = (int)::send(c, data + off, len - off, 0);
+            if (sent <= 0)
+                break;
+            off += sent;
+        }
+        net_close(c);
+    }
+
     // Accept one client, swallow its input, and never send anything back.
     void runSilent()
     {
