@@ -127,6 +127,9 @@ class Socket
 
 
 	//! Destructor
+	/*!
+		Closes the connection if one is still open.
+	*/
 	~Socket();
 
 
@@ -279,9 +282,41 @@ class Socket
 	bool sends(const char *buffer);
 
 
+	//! \cond
+	// Sending to a peer that has disconnected returns false rather than
+	// killing the process.
+	//
+	// The default disposition of SIGPIPE is to terminate, so before 1.7.1 a
+	// peer that hung up at the wrong moment could take down any program
+	// built on this library, and the program's only defence was to install
+	// a global SIGPIPE handler - not something a library should require.
+	//
+	// The first write after a clean close usually succeeds, since the
+	// peer's FIN closes only their direction; the kill lands on the write
+	// after the RST that follows. That is why it stayed hidden.
+	//
+	// Suppressed with SO_NOSIGPIPE on BSD and macOS, which covers every
+	// write on the descriptor including the ones OpenSSL makes internally,
+	// and with MSG_NOSIGNAL per send on Linux, which has no equivalent
+	// socket option. LIMITATION: MSG_NOSIGNAL only covers sends this
+	// library issues, so on Linux an SSL connection may still raise SIGPIPE
+	// from inside OpenSSL. If that matters to you, ignore SIGPIPE in your
+	// application.
+	//! \endcond
+
+
 	//! Closes the connection
 	/*!
-		 A connection must established before this method can be called
+		Safe to call more than once, and safe to call on a Socket that was
+		never connected: closing an already-closed connection succeeds and
+		does nothing.
+
+		You do not have to call this.  The destructor closes any connection
+		still open, so a Socket can simply be allowed to go out of scope.
+		Before 1.7.1 it could not: nothing in the teardown path closed
+		anything, so every Socket destroyed without an explicit close()
+		leaked its descriptor and left the peer holding a connection that
+		went away only when the process did.
 	*/
 	bool close();
 

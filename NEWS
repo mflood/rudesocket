@@ -3,6 +3,47 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
+Release 1.7.1 - Matthew Flood 2026-07-30
+
+	- FIXED: destroying a Socket did not close its connection.  Nothing in
+	  the teardown path closed anything - ~Socket deletes the
+	  implementation, ~Socket_TCPClient deletes the connection and comm
+	  objects, and Socket_Comm's destructor deliberately does not close
+	  (its own comment says children should call finish(), and finish()
+	  only unbinds).  So every Socket that went out of scope without an
+	  explicit close() leaked its descriptor, and the peer was left holding
+	  a connection that went away only when the process did.  A program
+	  opening sockets in a loop ran out of descriptors: the regression test
+	  counts 12 leaked across 12 sockets before the fix, none after.
+	  The destructor now gives the communication layer its chance to shut
+	  down cleanly - for TLS that is the close_notify - and then releases
+	  the descriptor.
+	- CHANGED: close() succeeds when there is nothing to close, instead of
+	  reporting an error.  Closing twice, or closing a Socket that was
+	  never connected, previously returned false; the second case said
+	  "does not have a Socket_Comm to close", which was true and not a
+	  problem.  This has to succeed now that the destructor closes, or the
+	  ordinary "close() and then let it go out of scope" pattern would
+	  either double close a descriptor or report a failure that is not one.
+	- close() also releases the descriptor when the shutdown handshake
+	  fails, rather than reporting the failure and leaving it open.
+	- FIXED: sending to a peer that had disconnected killed the process.
+	  The default disposition of SIGPIPE is to terminate, so any peer could
+	  take down any program built on this library - deliberately or by
+	  simply hanging up at the wrong moment - and the program could not
+	  defend itself except by installing a global SIGPIPE handler, which is
+	  not a library's to require.  It hid well: the first write after a
+	  clean close usually succeeds, because the peer's FIN closes only
+	  their direction, and the kill lands on the write after the RST that
+	  follows.  Suppressed with SO_NOSIGPIPE on BSD and macOS, which covers
+	  every write on the descriptor including OpenSSL's own, and with
+	  MSG_NOSIGNAL per send on Linux, which has no equivalent socket
+	  option.  Known limitation: MSG_NOSIGNAL covers only the sends this
+	  library issues, so on Linux an SSL connection may still raise SIGPIPE
+	  from inside OpenSSL; ignore SIGPIPE in your application if that
+	  matters.  Windows has no SIGPIPE.
+
+_______________________________________________________________________________
 Release 1.7.0 - Matthew Flood 2026-07-30
 
 	- NEW: Socket::startSSL() negotiates TLS over a connection that is

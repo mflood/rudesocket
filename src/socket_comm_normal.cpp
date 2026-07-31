@@ -45,6 +45,17 @@ namespace rude
 namespace sckt
 {
 
+// Keeps a send to a departed peer from raising SIGPIPE, which would kill the
+// process.  Linux offers this per call; BSD and macOS have no MSG_NOSIGNAL
+// and use the SO_NOSIGPIPE socket option instead, set where the socket is
+// created.  Windows has no SIGPIPE at all.
+//
+#ifdef MSG_NOSIGNAL
+#define RUDESOCKET_SEND_FLAGS MSG_NOSIGNAL
+#else
+#define RUDESOCKET_SEND_FLAGS 0
+#endif
+
 
 Socket_Comm_Normal::~Socket_Comm_Normal()
 {
@@ -118,7 +129,7 @@ int Socket_Comm_Normal::virtualsend(const char *data, int length)
 
 			// perform read function
 			//
-			rc = ::send(getSocketDescriptor(), (char *) &data[x], 1, 0);
+			rc = ::send(getSocketDescriptor(), (char *) &data[x], 1, RUDESOCKET_SEND_FLAGS);
 
 			if(rc == 0)
 			{
@@ -134,7 +145,7 @@ int Socket_Comm_Normal::virtualsend(const char *data, int length)
 	}
 	else
 	{
-		x = ::send(getSocketDescriptor(), data, length, 0);
+		x = ::send(getSocketDescriptor(), data, length, RUDESOCKET_SEND_FLAGS);
 
 
 		if(x == 0)
