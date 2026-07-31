@@ -44,6 +44,11 @@
 #define INCLUDED_STDLIB_H
 #endif
 
+#ifndef INCLUDED_STRING
+#include <string>
+#define INCLUDED_STRING
+#endif
+
 #ifndef INCLUDED_ERRNO_H
 #include <errno.h>
 #define INCLUDED_ERRNO_H
@@ -65,88 +70,197 @@ namespace sckt
 {
 
 //
+// The two platforms report socket errors through different channels: errno on
+// POSIX, WSAGetLastError() on Windows.  Everything below goes through these
+// rather than touching errno directly, so the same logic can serve both.
+//
+static int socketError()
+{
+#ifdef WIN32
+	return WSAGetLastError();
+#else
+	return errno;
+#endif
+}
+
+static void setSocketError(int err)
+{
+#ifdef WIN32
+	WSASetLastError(err);
+#else
+	errno = err;
+#endif
+}
+
+//
+// Puts the socket into non-blocking mode, or takes it back out.  Returns false
+// if the mode could not be changed.
+//
+// Windows offers no way to read the current mode back, so the restore assumes
+// the socket started out blocking.  Every socket this file works with was
+// created here, so it did.
+//
+static bool setNonBlocking(SOCKET s, bool nonblocking)
+{
+#ifdef WIN32
+	u_long mode = nonblocking ? 1 : 0;
+	return ioctlsocket(s, FIONBIO, &mode) == 0;
+#else
+	int flags = fcntl(s, F_GETFL);
+	if(flags == -1)
+	{
+		return false;
+	}
+	int wanted = nonblocking ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
+	return fcntl(s, F_SETFL, wanted) != -1;
+#endif
+}
+
+//
+// True when connect() has been accepted but not yet completed, which is what a
+// non-blocking connect reports the moment it is issued.
+//
+static bool connectInProgress()
+{
+#ifdef WIN32
+	return WSAGetLastError() == WSAEWOULDBLOCK;
+#else
+	return errno == EINPROGRESS || errno == EWOULDBLOCK;
+#endif
+}
+
+//
+// Renders the last socket error as text.
+//
+// Winsock does not report through errno -- ::connect() failures land in
+// WSAGetLastError() -- so strerror(errno) on Windows described whatever
+// unrelated CRT call touched errno last, if anything ever had.
+//
+static std::string lastSocketError()
+{
+#ifdef WIN32
+	int err = WSAGetLastError();
+	LPSTR text = NULL;
+	DWORD len = FormatMessageA(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, (DWORD) err, 0, (LPSTR) &text, 0, NULL);
+	std::string msg;
+	if(len && text)
+	{
+		// FormatMessage leaves a trailing CRLF on most messages.
+		while(len && (text[len - 1] == '\r' || text[len - 1] == '\n'))
+		{
+			--len;
+		}
+		msg.assign(text, len);
+	}
+	if(text)
+	{
+		LocalFree(text);
+	}
+	if(msg.empty())
+	{
+		char fallback[64];
+		snprintf(fallback, sizeof(fallback), "Socket error %d", err);
+		msg = fallback;
+	}
+	return msg;
+#else
+	return strerror(errno);
+#endif
+}
+
+//
+// Closes a descriptor this file opened, without disturbing the pending error.
+//
+static void closeSocket(SOCKET s)
+{
+	int saved = socketError();
+#ifdef WIN32
+	closesocket(s);
+#else
+	::close(s);
+#endif
+	setSocketError(saved);
+}
+
+//
 // param: msec is the timeout in milliseconds
-// returns: -1 on error, errno is set
+// returns: -1 on error; socketError() describes the underlying failure
 //          -2 on timeout
 //           0 if successful
 //
+// The error guarantee is the point of the SO_ERROR handling below.  A
+// non-blocking connect() reports "in progress" immediately and the real
+// outcome only lands in the socket's SO_ERROR, so a caller reading the error
+// after this returned used to see "Operation now in progress" for every
+// failure - a refused connection, an unreachable host, all of it.
+//
+// This whole function used to be a no-op on Windows: the non-blocking path sat
+// inside #ifndef WIN32, leaving a plain blocking ::connect() that ignored msec
+// entirely.  setTimeout() is documented to cover "Connect, Read and Send", and
+// on Windows it covered two of the three -- a connect to an address that
+// silently drops packets sat there for the stack's own SYN-retry period,
+// roughly 21 seconds, no matter what the caller asked for.  Winsock does the
+// same job through different names, so the difference is now confined to the
+// helpers above.
+//
 int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, socklen_t len, int msec)
 {
-	int ret;   // Result of syscalls
 	int value; // Value to be returned
 
-#ifdef WIN32
-	(void) msec;
-#else
-	int oldflags; // flags to be restored later
-	int newflags; // nonblocking sockopt for socket
-
-	// 1. ADJUST FLAGS
+	// 1. Make sure the descriptor is non-blocking, so connect() returns
+	//    immediately and select() gets to decide how long we wait.
 	//
-	// store the current flags in oldflags
-	// so we can restore them later
-	// oldflags = fcntl(socket, F_GETFL, 0);
-	// F_GETFL option returns the current flags
-	//
-	oldflags = fcntl(socket, F_GETFL);
-	if(oldflags == -1)
+	if(!setNonBlocking(socket, true))
 	{
-		// cout << "Could not obtain old flags.....\n";
-		// cout << strerror(errno);
 		return -1;
 	}
 
-
-	// Make sure descriptor is non blocking...
+	// 2. Issue the connect request.
 	//
-	newflags = oldflags | O_NONBLOCK;
-
-
-	// Update the socket with the new flags
-	//
-	if(fcntl(socket, F_SETFL, newflags) == -1)
-	{
-		// cout << "Could not update socket flags!!";
-		// cout << strerror(errno);
-		return -1;
-	}
-#endif
-
-
-	// 2. CONNECT
-	// Issue the connect request
-	ret = ::connect(socket, addr, len);
-
-
+	int ret = ::connect(socket, addr, len);
 
 	if(ret == 0)
 	{
+		// Connected outright - a loopback peer that is already listening
+		// often does.
+		//
 		value = 0;
 	}
-#ifndef WIN32
-	else if(errno == EINPROGRESS || errno == EWOULDBLOCK)
+	else if(connectInProgress())
 	{
 		fd_set wset;
+		fd_set eset;
 		struct timeval tv;
 
 		FD_ZERO(&wset);
 		FD_SET(socket, &wset);
 
+		// Windows signals a *failed* connect through the exception set
+		// rather than the write set, so both have to be watched or a
+		// refused connection would look like a timeout there.
+		//
+		FD_ZERO(&eset);
+		FD_SET(socket, &eset);
+
 		tv.tv_sec = msec / 1000;
 		tv.tv_usec = (long) 1000 * (msec % 1000);
 
-		ret = select(socket + 1, NULL, &wset, NULL, &tv);
+		ret = select(socket + 1, NULL, &wset, &eset, &tv);
 
-		if(ret == 1 && FD_ISSET(socket, &wset))
+		if(ret > 0 && (FD_ISSET(socket, &wset) || FD_ISSET(socket, &eset)))
 		{
-			int optval;
+			int optval = 0;
 			socklen_t optlen = sizeof(optval);
 
-			ret = getsockopt(socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
-			if(ret == -1)
+			// SO_ERROR is what separates "connected" from "failed" in
+			// either set; the set it landed in only says it finished.
+			//
+			ret = getsockopt(socket, SOL_SOCKET, SO_ERROR, (char *) &optval, &optlen);
+			if(ret != 0)
 			{
-				// cout << "Could not get socket options";
-				// cout << strerror(errno);
+				// getsockopt() itself failed; its own error stands.
 				value = -1;
 			}
 			else if(optval == 0)
@@ -155,45 +269,47 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 			}
 			else
 			{
-				// cout << "getSockOpt returned -1 in optval....";
+				// The connect failed.  optval holds why (ECONNREFUSED,
+				// EHOSTUNREACH, ETIMEDOUT...); publish it so the caller's
+				// error message names the actual problem.
+				//
+				setSocketError(optval);
 				value = -1;
 			}
 		}
 		else if(ret == 0)
 		{
-			// cout << "Select timeout";
-			// cout << strerror(errno);
-
-
 			value = -2; /* select timeout */
 		}
 		else
 		{
-			// cout << "Select Error";
-			// cout << strerror(errno);
 			value = -1; /* select error */
 		}
 	}
-#endif
 	else
 	{
-		// cout << "Connect failed for good reason:";
-		// cout << strerror(errno);
+		// Failed for a reason the stack knew about straight away.
+		//
 		value = -1;
 	}
 
-#ifndef WIN32
-
-	// 3. Restore the old flags
-	//;
-	if(fcntl(socket, F_SETFL, oldflags) == -1)
+	// 3. Restore blocking mode.
+	//
+	// This can overwrite the pending error on success as well as on failure,
+	// so save and restore it around the call; the diagnosis we just made is
+	// more useful than anything this can report.
+	//
 	{
-		// cout << "Error restoring Old flags";
-		// cout << strerror(errno);
-		value = -1;
+		int saved = socketError();
+		if(!setNonBlocking(socket, false))
+		{
+			value = -1;
+		}
+		else
+		{
+			setSocketError(saved);
+		}
 	}
-
-#endif
 
 	return value;
 }
@@ -260,6 +376,8 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 	if(getaddrinfo(server, (char *) 0, &hints, &res) != 0 || res == (struct addrinfo *) 0)
 	{
 		setError("Could not resolve domain");
+		closeSocket(sock);
+		sock = (SOCKET) 0;
 		return false;
 	}
 	peer.sin_addr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
@@ -278,14 +396,22 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 	}
 	if(rc)
 	{
-		if(rc == -1)
-		{
-			setError(strerror(errno));
-		}
 		if(rc == -2)
 		{
 			setError("Connect Timed Out");
 		}
+		else
+		{
+			setError(lastSocketError().c_str());
+		}
+
+		// This function opened the descriptor, so it owns it until it hands
+		// back a connected one.  Leaving it open on failure leaked a
+		// descriptor per attempt, which a caller that retries will notice
+		// long before anything else goes wrong.
+		//
+		closeSocket(sock);
+		sock = (SOCKET) 0;
 		return false;
 	}
 	setMessage("Connected!!");
