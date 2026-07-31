@@ -27,6 +27,21 @@ Release 1.7.1 - Matthew Flood 2026-07-30
 	  either double close a descriptor or report a failure that is not one.
 	- close() also releases the descriptor when the shutdown handshake
 	  fails, rather than reporting the failure and leaving it open.
+	- FIXED: sending to a peer that had disconnected killed the process.
+	  The default disposition of SIGPIPE is to terminate, so any peer could
+	  take down any program built on this library - deliberately or by
+	  simply hanging up at the wrong moment - and the program could not
+	  defend itself except by installing a global SIGPIPE handler, which is
+	  not a library's to require.  It hid well: the first write after a
+	  clean close usually succeeds, because the peer's FIN closes only
+	  their direction, and the kill lands on the write after the RST that
+	  follows.  Suppressed with SO_NOSIGPIPE on BSD and macOS, which covers
+	  every write on the descriptor including OpenSSL's own, and with
+	  MSG_NOSIGNAL per send on Linux, which has no equivalent socket
+	  option.  Known limitation: MSG_NOSIGNAL covers only the sends this
+	  library issues, so on Linux an SSL connection may still raise SIGPIPE
+	  from inside OpenSSL; ignore SIGPIPE in your application if that
+	  matters.  Windows has no SIGPIPE.
 
 _______________________________________________________________________________
 Release 1.7.0 - Matthew Flood 2026-07-30

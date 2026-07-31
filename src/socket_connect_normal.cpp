@@ -350,6 +350,25 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 		return false;
 	}
 
+	// Writing to a socket whose peer has gone raises SIGPIPE, and the
+	// default disposition of SIGPIPE is to kill the process.  A peer that
+	// disconnects at the wrong moment could therefore terminate any program
+	// using this library, and there was nothing the program could do about
+	// it from the outside short of changing a global signal handler - which
+	// a library has no business requiring.
+	//
+	// SO_NOSIGPIPE turns that into a plain EPIPE for everything sent over
+	// this descriptor, OpenSSL's writes included.  It is BSD and macOS only;
+	// Linux has no equivalent socket option and uses MSG_NOSIGNAL per send
+	// instead (see socket_comm_normal.cpp).
+	//
+#ifdef SO_NOSIGPIPE
+	{
+		int on = 1;
+		setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (const char *) &on, sizeof(on));
+	}
+#endif
+
 
 
 #ifdef WIN32
