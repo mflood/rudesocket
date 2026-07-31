@@ -36,6 +36,14 @@ if(RUDESOCKET_SSL_ENABLED)
     target_link_libraries(test_ssl_timeout PRIVATE rudesocket::rudesocket Threads::Threads)
     add_test(NAME ssl_timeout COMMAND test_ssl_timeout)
     list(APPEND rudesocket_tests ssl_timeout)
+
+    # Runs its own TLS server in-process (tests/tls_server.h), so it links
+    # OpenSSL directly rather than only through the library: `openssl s_server`
+    # cannot speak plaintext first and upgrade, which is the whole point here.
+    add_executable(test_ssl_upgrade test_ssl_upgrade.cpp)
+    target_link_libraries(test_ssl_upgrade PRIVATE rudesocket::rudesocket Threads::Threads OpenSSL::SSL OpenSSL::Crypto)
+    add_test(NAME ssl_upgrade COMMAND test_ssl_upgrade)
+    list(APPEND rudesocket_tests ssl_upgrade)
 endif()
 
 # Each test runs in its own scratch dir so fixtures (certs, logs) don't collide.

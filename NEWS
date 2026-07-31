@@ -3,6 +3,35 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
+Release 1.7.0 - Matthew Flood 2026-07-30
+
+	- NEW: Socket::startSSL() negotiates TLS over a connection that is
+	  already open.  This is the "STARTTLS" pattern, and it is what SMTP,
+	  IMAP, POP3 and FTP need: those protocols open in the clear, read a
+	  greeting, ask for encryption with a command, and only then upgrade.
+	  connectSSL() cannot serve them, because it establishes TLS while
+	  connecting - by the time the protocol knows it wants encryption, the
+	  connection exists and the plaintext greeting has been read.  Until
+	  now rudesocket could only offer TLS at connect time, so those
+	  protocols could not be secured through it at all.
+	- The descriptor is not disturbed by an upgrade; only the object
+	  communicating over it is replaced.  The certificate is verified
+	  against the host passed to connect(), honouring setSSLVerify()
+	  exactly as connectSSL() does - and if you connected through a proxy,
+	  that is still the destination host, which is who the TLS session is
+	  with.
+	- A failed handshake CLOSES the connection.  A half-negotiated session
+	  is not usable, and the caller has no way to shut it down: close()
+	  works through the communication object, which a failed bind leaves
+	  unbound, and nothing in the teardown path closes the descriptor.
+	  Do not call close() after startSSL() fails, and do not retry on the
+	  same object.
+	- Upgrading a connection that is already secure is refused rather than
+	  nesting one TLS session inside another.
+	- Without an OpenSSL build, startSSL() returns false and getError()
+	  says so, matching connectSSL().
+
+_______________________________________________________________________________
 Release 1.6.0 - Matthew Flood 2026-07-30
 
 	- FIXED: setTimeout() had no effect on connect() under Windows.  It is
