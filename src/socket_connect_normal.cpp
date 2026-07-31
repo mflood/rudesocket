@@ -44,6 +44,11 @@
 #define INCLUDED_STDLIB_H
 #endif
 
+#ifndef INCLUDED_STRING
+#include <string>
+#define INCLUDED_STRING
+#endif
+
 #ifndef INCLUDED_ERRNO_H
 #include <errno.h>
 #define INCLUDED_ERRNO_H
@@ -65,10 +70,71 @@ namespace sckt
 {
 
 //
+// Renders the last socket error as text.
+//
+// Winsock does not report through errno -- ::connect() failures land in
+// WSAGetLastError() -- so strerror(errno) on Windows described whatever
+// unrelated CRT call touched errno last, if anything ever had.
+//
+static std::string lastSocketError()
+{
+#ifdef WIN32
+	int err = WSAGetLastError();
+	LPSTR text = NULL;
+	DWORD len = FormatMessageA(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, (DWORD) err, 0, (LPSTR) &text, 0, NULL);
+	std::string msg;
+	if(len && text)
+	{
+		// FormatMessage leaves a trailing CRLF on most messages.
+		while(len && (text[len - 1] == '\r' || text[len - 1] == '\n'))
+		{
+			--len;
+		}
+		msg.assign(text, len);
+	}
+	if(text)
+	{
+		LocalFree(text);
+	}
+	if(msg.empty())
+	{
+		char fallback[64];
+		snprintf(fallback, sizeof(fallback), "Socket error %d", err);
+		msg = fallback;
+	}
+	return msg;
+#else
+	return strerror(errno);
+#endif
+}
+
+//
+// Closes a descriptor this file opened, without disturbing errno.
+//
+static void closeSocket(SOCKET s)
+{
+	int saved = errno;
+#ifdef WIN32
+	closesocket(s);
+#else
+	::close(s);
+#endif
+	errno = saved;
+}
+
+//
 // param: msec is the timeout in milliseconds
-// returns: -1 on error, errno is set
+// returns: -1 on error, errno is set to the underlying failure
 //          -2 on timeout
 //           0 if successful
+//
+// The errno guarantee is the point of the SO_ERROR handling below.  A
+// non-blocking connect() reports EINPROGRESS immediately and the real outcome
+// only lands in the socket's SO_ERROR, so a caller reading errno after this
+// returns used to see "Operation now in progress" for every failure - a
+// refused connection, an unreachable host, all of it.
 //
 int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, socklen_t len, int msec)
 {
@@ -145,8 +211,7 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 			ret = getsockopt(socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 			if(ret == -1)
 			{
-				// cout << "Could not get socket options";
-				// cout << strerror(errno);
+				// getsockopt() itself failed; errno already describes that.
 				value = -1;
 			}
 			else if(optval == 0)
@@ -155,7 +220,10 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 			}
 			else
 			{
-				// cout << "getSockOpt returned -1 in optval....";
+				// The connect failed.  optval holds why (ECONNREFUSED,
+				// EHOSTUNREACH, ETIMEDOUT...); publish it through errno so
+				// the caller's strerror() names the actual problem.
+				errno = optval;
 				value = -1;
 			}
 		}
@@ -185,12 +253,21 @@ int Socket_Connect_Normal::connecttimeout(int socket, struct sockaddr *addr, soc
 #ifndef WIN32
 
 	// 3. Restore the old flags
-	//;
-	if(fcntl(socket, F_SETFL, oldflags) == -1)
+	//
+	// fcntl() overwrites errno on success as well as failure on some
+	// platforms, so save and restore it around the call; the diagnosis we
+	// just made is more useful than anything this can report.
+	//
 	{
-		// cout << "Error restoring Old flags";
-		// cout << strerror(errno);
-		value = -1;
+		int saved = errno;
+		if(fcntl(socket, F_SETFL, oldflags) == -1)
+		{
+			value = -1;
+		}
+		else
+		{
+			errno = saved;
+		}
 	}
 
 #endif
@@ -260,6 +337,8 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 	if(getaddrinfo(server, (char *) 0, &hints, &res) != 0 || res == (struct addrinfo *) 0)
 	{
 		setError("Could not resolve domain");
+		closeSocket(sock);
+		sock = (SOCKET) 0;
 		return false;
 	}
 	peer.sin_addr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
@@ -278,14 +357,22 @@ bool Socket_Connect_Normal::simpleConnect(SOCKET &sock, const char *server, int 
 	}
 	if(rc)
 	{
-		if(rc == -1)
-		{
-			setError(strerror(errno));
-		}
 		if(rc == -2)
 		{
 			setError("Connect Timed Out");
 		}
+		else
+		{
+			setError(lastSocketError().c_str());
+		}
+
+		// This function opened the descriptor, so it owns it until it hands
+		// back a connected one.  Leaving it open on failure leaked a
+		// descriptor per attempt, which a caller that retries will notice
+		// long before anything else goes wrong.
+		//
+		closeSocket(sock);
+		sock = (SOCKET) 0;
 		return false;
 	}
 	setMessage("Connected!!");

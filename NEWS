@@ -3,6 +3,31 @@ See ChangeLog for more detailed information on internal changes
 See the end for copying conditions.
 
 _______________________________________________________________________________
+Release 1.5.1 - Matthew Flood 2026-07-30
+
+	- FIXED: with a timeout configured, a failed connect() described itself
+	  as "Operation now in progress" no matter what actually went wrong.
+	  connecttimeout() switches the descriptor to non-blocking, so
+	  ::connect() returns EINPROGRESS straight away and the real outcome
+	  arrives later in the socket's SO_ERROR.  That value was read, tested
+	  against zero and discarded, so errno still held EINPROGRESS by the
+	  time the caller reached getError().  A refused connection, an
+	  unreachable host and a reset all produced the same useless message -
+	  and only when a timeout was set, since the untimed path reported
+	  correctly.  SO_ERROR is now published through errno, and errno is
+	  preserved across the fcntl() that restores the descriptor flags.
+	- FIXED: a failed connect() leaked the descriptor it had opened, and
+	  nothing could reclaim it: close() declines to act unless the comm
+	  object was bound, which only happens on success.  A caller that
+	  retries ran out of descriptors.  simpleConnect() now closes what it
+	  opened on every failure path, including a failed name resolution.
+	- FIXED: on Windows, connect() errors were reported with
+	  strerror(errno).  Winsock does not set errno - failures land in
+	  WSAGetLastError() - so the message described whatever unrelated CRT
+	  call had last touched errno.  Windows now formats the actual socket
+	  error.
+
+_______________________________________________________________________________
 Release 1.5.0 - Matthew Flood 2026-07-30
 
 	- REMOVED: the autotools build (configure, configure.ac, Makefile.am,

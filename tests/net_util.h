@@ -41,6 +41,28 @@ inline void net_init() {}
 inline void net_cleanup() {}
 #endif
 
+// Returns a 127.0.0.1 port number with nothing listening on it: bind an
+// ephemeral port, learn its number, then give it back. Connecting there draws
+// an immediate RST rather than a hang, which is what makes it usable as a
+// deterministic "connection refused" fixture in a test.
+inline int net_dead_port()
+{
+	net_socket_t s = ::socket(AF_INET, SOCK_STREAM, 0);
+	if(s == NET_INVALID_SOCKET)
+		return 0;
+	sockaddr_in addr;
+	std::memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_port = 0;
+	::bind(s, (sockaddr *) &addr, sizeof(addr));
+	socklen_t len = sizeof(addr);
+	::getsockname(s, (sockaddr *) &addr, &len);
+	int port = ntohs(addr.sin_port);
+	net_close(s);
+	return port;
+}
+
 // Minimal TCP server bound to 127.0.0.1 on an ephemeral port.
 class TestServer
 {
