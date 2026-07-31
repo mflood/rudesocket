@@ -20,7 +20,11 @@ add_executable(test_connect_error test_connect_error.cpp)
 target_link_libraries(test_connect_error PRIVATE rudesocket::rudesocket Threads::Threads)
 add_test(NAME connect_error COMMAND test_connect_error)
 
-set(rudesocket_tests echo timeout readline_eof contract connect_error)
+add_executable(test_connect_timeout test_connect_timeout.cpp)
+target_link_libraries(test_connect_timeout PRIVATE rudesocket::rudesocket Threads::Threads)
+add_test(NAME connect_timeout COMMAND test_connect_timeout)
+
+set(rudesocket_tests echo timeout readline_eof contract connect_error connect_timeout)
 
 if(RUDESOCKET_SSL_ENABLED)
     add_executable(test_ssl test_ssl.cpp)
