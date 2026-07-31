@@ -114,6 +114,7 @@ void Rude_SocketImpl::setSSLVerify(bool verify)
 bool Rude_SocketImpl::connect(const char *server, int port)
 {
 	d_sslerror = "";
+	d_lastserver = server ? server : "";
 	Socket_Connect_Normal *normalconnect = new Socket_Connect_Normal();
 	normalconnect->setChild(d_lastconnect);
 	d_tcpclient.setConnection(normalconnect);
@@ -125,6 +126,7 @@ bool Rude_SocketImpl::connect(const char *server, int port)
 bool Rude_SocketImpl::connectSSL(const char *server, int port)
 {
 	d_sslerror = "";
+	d_lastserver = server ? server : "";
 #ifdef USING_OPENSSL
 	Socket_Connect_Normal *normalconnect = new Socket_Connect_Normal();
 	normalconnect->setChild(d_lastconnect);
@@ -140,6 +142,18 @@ bool Rude_SocketImpl::connectSSL(const char *server, int port)
 	(void) server;
 	(void) port;
 	d_sslerror = "RudeSocket was built without SSL support - connectSSL() is unavailable. Rebuild with OpenSSL (RUDESOCKET_WITH_SSL=ON).";
+	return false;
+#endif
+}
+
+
+bool Rude_SocketImpl::startSSL()
+{
+	d_sslerror = "";
+#ifdef USING_OPENSSL
+	return d_tcpclient.startSSL(d_lastserver.c_str(), d_sslverify);
+#else
+	d_sslerror = "RudeSocket was built without SSL support - startSSL() is unavailable. Rebuild with OpenSSL (RUDESOCKET_WITH_SSL=ON).";
 	return false;
 #endif
 }

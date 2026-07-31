@@ -97,6 +97,14 @@ class Socket_Comm
 
 
 	//=
+	// True when this object communicates over an encrypted channel.
+	// Used to reject an attempt to negotiate TLS over a connection that is
+	// already carrying it, which would put a second session inside the first.
+	//=
+	virtual bool isSecure() const;
+
+
+	//=
 	// Sets the timeout for sending and reading data
 	// Setting the timeout to 0 will block instead of timeout.
 	//=

@@ -35,6 +35,13 @@
 #endif
 
 
+#ifdef USING_OPENSSL
+#ifndef INCLUDED_SOCKET_COMM_SSH_H
+#include "socket_comm_ssh.h"
+#endif
+#endif
+
+
 #ifndef INCLUDED_SOCKET_PLATFORM_H
 #include "socket_platform.h"
 #endif
@@ -343,6 +350,88 @@ bool Socket_TCPClient::connect(const char *server, int port)
 		return false;
 	}
 }
+
+//
+// Negotiates TLS over a connection that is already up.
+//
+// This is what STARTTLS-style protocols need: SMTP, IMAP, POP3 and FTP all
+// open in the clear, exchange a command or two, and only then ask for
+// encryption.  connectSSL() cannot serve them, because it establishes TLS as
+// part of connecting - by the time those protocols know they want it, the
+// connection exists and the plaintext greeting has already been read.
+//
+// The descriptor is untouched.  All that changes is the object doing the
+// talking over it: the plaintext comm is released, an SSL one takes its place
+// and binds to the same socket, and binding is what performs the handshake.
+//
+bool Socket_TCPClient::startSSL(const char *hostname, bool verifypeer)
+{
+#ifdef USING_OPENSSL
+	if(d_comm == (Socket_Comm *) 0)
+	{
+		setError("Socket_TCPClient::startSSL - no connection to secure");
+		return false;
+	}
+	if(d_sock == (SOCKET) 0)
+	{
+		setError("Socket_TCPClient::startSSL - not connected");
+		return false;
+	}
+	if(d_comm->isSecure())
+	{
+		// Running a second handshake inside the first one would build a
+		// TLS session within a TLS session: it may even succeed, and
+		// nothing after it would work.
+		//
+		setError("Socket_TCPClient::startSSL - connection is already secure");
+		return false;
+	}
+
+	// Release the plaintext layer from the socket.  finish() unbinds; for
+	// plain communication it has nothing else to do, and in particular it
+	// does not close the descriptor, which is the whole point here.
+	//
+	if(!d_comm->finish())
+	{
+		setError(d_comm->getError());
+		return false;
+	}
+
+	Socket_Comm_SSH *comm = new Socket_Comm_SSH();
+	comm->setHostname(hostname);
+	comm->setVerifyPeer(verifypeer);
+	setComm(comm); // deletes the old comm
+
+	if(!d_comm->bind(d_sock))
+	{
+		// The handshake failed.  This connection cannot be used for
+		// anything now, and the caller has no way to shut it down: close()
+		// goes through the comm object, and nothing in the teardown path
+		// closes the descriptor - Socket_Comm's destructor explicitly does
+		// not, and SSL_free() leaves the descriptor SSL_set_fd() was given
+		// open.  So close it here rather than leak it, and document that a
+		// failed upgrade ends the connection.
+		//
+		setError(d_comm->getError());
+#ifdef WIN32
+		closesocket(d_sock);
+#else
+		::shutdown(d_sock, SHUT_RDWR);
+		::close(d_sock);
+#endif
+		d_sock = 0;
+		return false;
+	}
+
+	return true;
+#else
+	(void) hostname;
+	(void) verifypeer;
+	setError("RudeSocket was built without SSL support - startSSL() is unavailable. Rebuild with OpenSSL (RUDESOCKET_WITH_SSL=ON).");
+	return false;
+#endif
+}
+
 
 bool Socket_TCPClient::close()
 {

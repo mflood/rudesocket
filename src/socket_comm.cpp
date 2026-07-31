@@ -96,6 +96,14 @@ int Socket_Comm::getTimeoutMicroSecs() const
 }
 
 
+bool Socket_Comm::isSecure() const
+{
+	// Plain communication unless a subclass says otherwise.
+	//
+	return false;
+}
+
+
 bool Socket_Comm::bind(SOCKET &sock)
 {
 	// this binds our object to the physical integer holding the file descriptor....

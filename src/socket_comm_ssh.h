@@ -74,6 +74,8 @@ class Socket_Comm_SSH : public Socket_Comm
 	Socket_Comm_SSH();
 	~Socket_Comm_SSH();
 
+	virtual bool isSecure() const;
+
 	//=
 	// Sets the hostname of the destination server.
 	// Used for SNI (RFC 6066) and for certificate hostname verification.

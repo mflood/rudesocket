@@ -155,6 +155,52 @@ class Socket
 	*/
 	bool connectSSL(const char *server, int port);
 
+
+	//! Negotiates TLS over a connection that is already open
+	/*!
+		This is the "STARTTLS" pattern, and it is what SMTP, IMAP, POP3 and
+		FTP need: those protocols open in the clear, exchange a greeting and
+		a command or two, and only then ask to be encrypted.  connectSSL()
+		cannot serve them, because it establishes TLS while connecting - by
+		the time the protocol knows it wants encryption, the connection
+		exists and the plaintext greeting has already been read.
+
+		Call it after connect() has succeeded and after the peer has agreed
+		to the upgrade.  Everything sent and received afterwards is
+		encrypted; the socket itself does not change.
+
+		The certificate is verified against the host passed to connect(),
+		honouring setSSLVerify() exactly as connectSSL() does.  If you
+		connected through a proxy, that is still the destination host, which
+		is who the TLS session is with.
+
+		Returns false if the handshake fails, if the connection is already
+		secure, or if there is no connection.  <b>A failed handshake closes
+		the connection</b> - a half-negotiated TLS session is not usable and
+		cannot be handed back - so do not call close() after a failure, and
+		do not expect to retry on the same object.
+
+		Requires a build with OpenSSL; without it this returns false and
+		getError() says so.
+
+		<b>Example:</b>
+		\code
+		rude::Socket socket;
+		socket.connect("smtp.example.com", 587);
+		socket.readline();                 // 220 greeting, in the clear
+		socket.sends("STARTTLS\r\n");
+		socket.readline();                 // 220 go ahead
+		if(!socket.startSSL())
+		{
+			cout << socket.getError() << "\n";
+			return;
+		}
+		// everything from here on is encrypted
+		\endcode
+	*/
+	bool startSSL();
+
+
 	//! Enables or disables SSL certificate verification (enabled by default)
 	/*!
 		When enabled (the default), connectSSL() verifies the server's

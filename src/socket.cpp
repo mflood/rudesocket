@@ -71,6 +71,11 @@ bool Socket::connectSSL(const char *server, int port)
 	return d_implementation->connectSSL(server, port);
 }
 
+bool Socket::startSSL()
+{
+	return d_implementation->startSSL();
+}
+
 void Socket::setSSLVerify(bool verify)
 {
 	d_implementation->setSSLVerify(verify);

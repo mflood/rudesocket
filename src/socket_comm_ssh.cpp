@@ -320,6 +320,12 @@ int Socket_Comm_SSH::virtualsend(const char *data, int length)
 	}
 }
 
+bool Socket_Comm_SSH::isSecure() const
+{
+	return true;
+}
+
+
 bool Socket_Comm_SSH::virtualfinish()
 {
 	if(ssl)

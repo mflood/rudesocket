@@ -88,6 +88,15 @@ class Socket_TCPClient
 	void setComm(Socket_Comm *comm);
 
 
+	//=
+	// Negotiates TLS over the existing connection.
+	// The socket stays the same; only the communication layer is replaced.
+	// On failure the connection is closed, because a half-negotiated TLS
+	// session cannot be handed back to the caller in a usable state.
+	//=
+	bool startSSL(const char *hostname, bool verifypeer);
+
+
 	const char *getError();
 
 

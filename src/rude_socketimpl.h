@@ -56,6 +56,13 @@ class Rude_SocketImpl
 	bool d_sslverify;
 	std::string d_sslerror;
 
+	// The destination host of the last connect(), kept for startSSL() to
+	// use as the SNI name and the name to verify the certificate against.
+	// It is the destination rather than any proxy in front of it, which is
+	// what the TLS session is actually with.
+	//
+	std::string d_lastserver;
+
 
   public:
 	//=
@@ -92,6 +99,12 @@ class Rude_SocketImpl
 	//
 	//=
 	bool connectSSL(const char *server, int port);
+
+
+	//=
+	//
+	//=
+	bool startSSL();
 
 	//=
 	// Enables / disables SSL certificate verification (enabled by default)
