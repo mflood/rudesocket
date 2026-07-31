@@ -24,7 +24,11 @@ add_executable(test_connect_timeout test_connect_timeout.cpp)
 target_link_libraries(test_connect_timeout PRIVATE rudesocket::rudesocket Threads::Threads)
 add_test(NAME connect_timeout COMMAND test_connect_timeout)
 
-set(rudesocket_tests echo timeout readline_eof contract connect_error connect_timeout)
+add_executable(test_socket_lifetime test_socket_lifetime.cpp)
+target_link_libraries(test_socket_lifetime PRIVATE rudesocket::rudesocket Threads::Threads)
+add_test(NAME socket_lifetime COMMAND test_socket_lifetime)
+
+set(rudesocket_tests echo timeout readline_eof contract connect_error connect_timeout socket_lifetime)
 
 if(RUDESOCKET_SSL_ENABLED)
     add_executable(test_ssl test_ssl.cpp)

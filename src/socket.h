@@ -127,6 +127,9 @@ class Socket
 
 
 	//! Destructor
+	/*!
+		Closes the connection if one is still open.
+	*/
 	~Socket();
 
 
@@ -281,7 +284,16 @@ class Socket
 
 	//! Closes the connection
 	/*!
-		 A connection must established before this method can be called
+		Safe to call more than once, and safe to call on a Socket that was
+		never connected: closing an already-closed connection succeeds and
+		does nothing.
+
+		You do not have to call this.  The destructor closes any connection
+		still open, so a Socket can simply be allowed to go out of scope.
+		Before 1.7.1 it could not: nothing in the teardown path closed
+		anything, so every Socket destroyed without an explicit close()
+		leaked its descriptor and left the peer holding a connection that
+		went away only when the process did.
 	*/
 	bool close();
 

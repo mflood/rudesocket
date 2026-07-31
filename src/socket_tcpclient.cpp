@@ -87,6 +87,22 @@ Socket_TCPClient::Socket_TCPClient()
 
 Socket_TCPClient::~Socket_TCPClient()
 {
+	// A Socket that went out of scope without an explicit close() used to
+	// leak its descriptor and never send FIN: nothing in the teardown path
+	// closed anything.  The peer was left holding a connection that would
+	// only go away when the process did, and a program opening sockets in a
+	// loop ran out of descriptors.
+	//
+	// The comm object is given its chance to shut down cleanly first - for
+	// TLS that is the close_notify - and then the descriptor goes,
+	// regardless of what it reported.
+	//
+	if(d_sock != (SOCKET) 0 && d_comm != (Socket_Comm *) 0)
+	{
+		d_comm->finish();
+	}
+	closeDescriptor();
+
 	if(d_connection)
 	{
 		delete d_connection;
@@ -95,6 +111,22 @@ Socket_TCPClient::~Socket_TCPClient()
 	{
 		delete d_comm;
 	}
+}
+
+
+void Socket_TCPClient::closeDescriptor()
+{
+	if(d_sock == (SOCKET) 0)
+	{
+		return;
+	}
+#ifdef WIN32
+	closesocket(d_sock);
+#else
+	::shutdown(d_sock, SHUT_RDWR);
+	::close(d_sock);
+#endif
+	d_sock = 0;
 }
 
 
@@ -435,30 +467,30 @@ bool Socket_TCPClient::startSSL(const char *hostname, bool verifypeer)
 
 bool Socket_TCPClient::close()
 {
-	if(d_comm != (Socket_Comm *) 0)
+	// Closing something that is not open is not a failure.  It has to
+	// succeed: the destructor closes now, so anything else would make the
+	// ordinary "close() and then let it go out of scope" pattern either
+	// double close a descriptor or report an error that is not one.  This
+	// also covers a Socket that was never connected, which used to report
+	// "does not have a Socket_Comm to close" - true, and not a problem.
+	//
+	if(d_sock == (SOCKET) 0)
 	{
-		if(d_comm->finish())
-		{
-
-#ifdef WIN32
-			closesocket(d_sock);
-#else
-			::shutdown(d_sock, SHUT_RDWR);
-			::close(d_sock);
-#endif
-			return true;
-		}
-		else
-		{
-			setError(d_comm->getError());
-			return false;
-		}
+		return true;
 	}
-	else
+
+	if(d_comm != (Socket_Comm *) 0 && !d_comm->finish())
 	{
-		setError("Socket_TCPClient::close does not have a Socket_Comm to close");
+		// Report why, but still release the descriptor - leaving it open
+		// because the shutdown handshake went badly is how they leak.
+		//
+		setError(d_comm->getError());
+		closeDescriptor();
 		return false;
 	}
+
+	closeDescriptor();
+	return true;
 }
 } // namespace sckt
 } // namespace rude

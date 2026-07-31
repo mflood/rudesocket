@@ -65,6 +65,13 @@ class Socket_TCPClient
   protected:
 	void setError(const char *error);
 
+
+	//=
+	// Closes the descriptor if one is open and forgets it, so that closing
+	// twice is harmless.
+	//=
+	void closeDescriptor();
+
   public:
 	Socket_TCPClient();
 
